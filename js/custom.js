@@ -3,14 +3,14 @@
  * Auteur : Stawen Dronek
  * Utilisation commerciale interdite sans mon accord
  ******************************************************/
-/* global lang, Highcharts, sessionToken, $ */
+/* global lang, Highcharts, $ */
 $(document).ready(function() {
 
 	$(".tip").tooltip({
     	placement: "right",
     	html: true
 	});
-	
+
 	$.growlUpdateAvailable = function() {
 		$.notify({
 			icon: 'glyphicon glyphicon-thumbs-up',
@@ -57,7 +57,7 @@ $(document).ready(function() {
 			type: 'warning'
 		});
 	};
-	
+
 	$.api = function(mode, cmd, tab, typeSync) {
 
 		var tmp = cmd.split('.');
@@ -66,7 +66,7 @@ $(document).ready(function() {
 		tab = typeof tab !== 'undefined' ? tab : {};
 		typeSync = typeof typeSync !== 'undefined' ? typeSync : true;
 
-		urlFinal = 'ajax.php?sid=' + sessionToken + '&' + urlFinal;
+		urlFinal = 'ajax.php?' + urlFinal;
 		//var urlFinal = 'ajax.php?' + urlFinal;
 		var jxhr =  $.ajax({
 			url: urlFinal,
@@ -89,12 +89,12 @@ $(document).ready(function() {
 				}
 			}
 		});
-		
+
 		return jxhr;
 	};
 
-	
-	
+
+
 
 	$.validateDate = function(dtValue) {
 		var dtRegex = new RegExp(/\b\d{1,2}[\/]\d{1,2}[\/]\d{4}\b/);
@@ -132,41 +132,41 @@ $(document).ready(function() {
 	$("#btlogin").click(function(e){
 		var user = $('#inputUser').val();
 		var pass = $('#inputPassword').val();
-		
+
 		if(user !== '' && pass !== ''){
-		
+
 			$.api('POST', 'admin.login', {user: user, pass: pass}, false).done(function(json) {
-						
+
 				if(!json.response){
 					e.preventDefault();
 					$.growlErreur(lang.error.userPassIncorrect);
 				}
 			});
 		}
-		
+
 	});
-	
+
 	$("#btlogout").click(function(){
-		
+
 		$.api('GET', 'admin.logout',{},false).done(function(json) {
 				if(json.response){
 					window.location.replace("index.php");
 				}
-			
+
 		});
 	});
-	
+
 	$("#btChangePass").click(function(e){
-		
+
 		var pass 	= $('#inputPass').val();
 		var confirm = $('#inputPassConfirm').val();
-		
+
 		if(pass !== '' && confirm !== ''){
-			
+
 			if(pass === confirm){
-			
+
 				$.api('POST', 'admin.changePassword', {pass: pass}).done(function(json) {
-							
+
 					if(!json.response){
 						e.preventDefault();
 						$.growlErreur(lang.error.passNotChanged);
@@ -177,7 +177,7 @@ $(document).ready(function() {
 				$.growlErreur(lang.error.passNotTheSame);
 			}
 		}
-		
+
 	});
 
 

@@ -3,20 +3,20 @@
  * Auteur : Stawen Dronek
  * Utilisation commerciale interdite sans mon accord
  ******************************************************/
-/* global lang,sessionToken, $ */
+/* global lang, $ */
 
 $(document).ready(function() {
 
-	
+
 
 	/*
 	 * Espace Matrice CSV
 	 */
-	
-	
+
+
 	$('#fileupload').fileupload({
 
-		url: 'ajax.php?sid=' + sessionToken + '&type=admin&action=uploadCsv',
+		url: 'ajax.php?type=admin&action=uploadCsv',
 		dataType: 'json',
 		autoUpload: true,
 		acceptFileTypes: /(\.|\/)(csv)$/i,
@@ -35,13 +35,13 @@ $(document).ready(function() {
 						 '0%'
 				);
 				makeMatrice();
-				
+
 			}, 1000);
 
 		},
 		progress: function(e, data) {
 			var progress = parseInt(data.loaded / data.total * 100, 10);
-			
+
 			$('#bar').css(
 				'width',
 				progress + '%'
@@ -57,7 +57,7 @@ $(document).ready(function() {
 				$("#headerCsv > tbody").html("");
 
 				$.each(json.data, function(key, val) {
-					
+
 					$('#headerCsv > tbody:last').append('<tr> \
 				                                        	<td>' + val.original_name + '</td>\
 				                                        	<td>' + val.name + '</td>\
@@ -76,11 +76,11 @@ $(document).ready(function() {
 		});
 
 	}
-	
+
 	$.matriceComplet = function() {
 
 		var r = false;
-		
+
 		$.api('GET', 'admin.statusMatrice', {}, false).done(function(json) {
 			r = json.response;
 		}).error(function() {
@@ -92,7 +92,7 @@ $(document).ready(function() {
 	}
 
 
-	
+
 	if ($.matriceComplet()) {
 		makeMatrice();
 	}
@@ -102,47 +102,47 @@ $(document).ready(function() {
 	}
 
 	$("#updateConfirm").click(function(){
-		
+
 		$("#btup").html('Mise à jour Matrice');
 		//hidden.bs.modal
 		$('#confirm-updateMatrix').modal('hide');
-		
+
 		$("#selectFile").show();
 		$("#concordance").hide();
-		
-		
-		
+
+
+
 		$('#fileupload').fileupload({
-			formData: { 
+			formData: {
 				actionFile: 'matrice',
 				update: true
 			}
 		});
-		
-		
+
+
 	});
-	
+
 	$("#deleteConfirm").click(function(){
 		$.api('GET', 'admin.deleteMatrice').done(function(json) {
-			
+
 			if(json.response){
-				
+
 				$('#fileupload').fileupload({
-					formData: { 
+					formData: {
 						actionFile: 'matrice'
 					}
 				});
 				$("#btup").html('Fichier CSV produit par la chaudière');
-				
+
 				$("#selectFile").show();
 				$("#concordance").hide();
 				$('#confirm-deleteMatrix').modal('hide');
-				
+
 			}else{
 				$.growlErreur(lang.error.deleteMatrix);
 			}
 		});
-	
+
 	});
 
 });

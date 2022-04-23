@@ -3,10 +3,10 @@
  * Auteur : Stawen Dronek
  * Utilisation commerciale interdite sans mon accord
  ******************************************************/
-/* global lang, sessionToken */
+/* global lang */
 $(document).ready(function() {
 
-	
+
 
 	/*
 	 * Gestion import via USB
@@ -14,7 +14,7 @@ $(document).ready(function() {
 
 	$('#fileupload').fileupload({
 
-		url: 'ajax.php?sid=' + sessionToken + '&type=admin&action=uploadCsv',
+		url: 'ajax.php?type=admin&action=uploadCsv',
 		dataType: 'json',
 		autoUpload: true,
 		acceptFileTypes: /(\.|\/)(csv)$/i,
@@ -24,7 +24,7 @@ $(document).ready(function() {
 		},
 		start: function(e) {
 			//console.log('Uploads started');
-			
+
 		},
 		done: function(e, data) {
 			setTimeout(function() {
@@ -64,5 +64,5 @@ $(document).ready(function() {
 	}
 
 
-	
+
 });

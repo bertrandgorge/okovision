@@ -12,12 +12,7 @@ function is_ajax()
     //return true;
 }
 
-function is_valid()
-{
-    return (0 == strcmp(session::getInstance()->getVar('sid'), $_GET['sid'])) ? true : false;
-}
-
-if (is_ajax() && is_valid()) {
+if (is_ajax()) {
     if (isset($_GET['type'], $_GET['action'])) {
         /*
         * TODO
@@ -332,9 +327,5 @@ if (is_ajax() && is_valid()) {
 } else {
     if (!is_ajax()) {
         echo '<pre>xmlhttprequest needed ! </pre>';
-    }
-    if (!is_valid()) {
-        header('Content-type: text/json; charset=utf-8');
-        echo '{"response": false,"sessionToken": "invalid"}';
     }
 }
