@@ -35,5 +35,3 @@ if (GET_CHAUDIERE_DATA_BY_IP) {
     $day = date('Y-m-d', mktime(0, 0, 0, date('m'), date('d') - 1, date('Y')));
     $oko->makeSyntheseByDay($day, false);
 }
-
-  echo 'done';
