@@ -32,9 +32,7 @@ foreach ($lines as $line) {
         $filename = $matches[1];
         $localfilename = basename($filename);
         
-        if (!file_exists($localfilename)) {
-            copy ('http://192.168.1.41' . $filename, $localfilename);
-        }
+        copy ('http://192.168.1.41' . $filename, $localfilename);
         
         if (preg_match('/[0-9]{2}-[a-zA-Z]+-[0-9]{4} [0-9]{2}:[0-9]{2}/', $line, $matches)) 
             $filedate = $matches[0];
