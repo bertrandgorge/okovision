@@ -46,6 +46,16 @@ foreach ($lines as $line) {
     }
 }
 
+// Now remove files older than 7 days
+$files = glob('touch_*.csv');
+$now = time();
+$fourteenDaysAgo = $now - (14 * 24 * 60 * 60);
+foreach ($files as $file) {
+    if (filemtime($file) < $fourteenDaysAgo) {
+        unlink($file);
+    }
+}
+
 ?>
             </tbody>
         </table>
