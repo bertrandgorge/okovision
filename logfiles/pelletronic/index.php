@@ -1,5 +1,4 @@
 <html>
-
 <head>
     <title>Index of /logfiles/pelletronic/</title>
     <style>
@@ -8,7 +7,6 @@
         }
     </style>
 </head>
-
 <body>
     <h1>Index of /logfiles/pelletronic/</h1>
     <pre>
