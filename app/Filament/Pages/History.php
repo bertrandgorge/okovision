@@ -70,7 +70,6 @@ class History extends Page
     {
         [$from, $to] = $this->range();
         $charts = app(ChartFactory::class);
-        $days = CarbonImmutable::parse($from)->diffInDays(CarbonImmutable::parse($to));
         $totals = \DB::table('daily_stats')->whereBetween('day', [$from, $to])
             ->selectRaw('SUM(pellets_kg) kg, SUM(pellets_kg_dhw) kg_dhw, SUM(dju) dju, SUM(cycles) cycles, SUM(cold_starts) cold, AVG(outside_avg) t, COUNT(*) n')
             ->first();
@@ -84,8 +83,6 @@ class History extends Page
             'cycles' => $charts->withChangeMarkers($charts->dailyCycles($from, $to), $notes),
             'notes' => $notes,
             'histogram' => $charts->cycleHistogram($from, $to),
-            'heatmap' => $days <= 120 ? $charts->heatmap($from, $to) : null,
-            'heatmapHeight' => max(240, min(1800, ($days + 1) * 14 + 80)).'px',
             'seasonsMonthly' => $charts->seasonsMonthly(),
             'seasons' => $charts->seasonsTable(),
             'signature' => $charts->signature(),

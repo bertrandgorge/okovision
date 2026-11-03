@@ -95,12 +95,6 @@
         </x-filament::section>
     </div>
 
-    @if ($heatmap)
-        <x-filament::section heading="Carte de chaleur du brûleur" description="Minutes de combustion par heure : visualise les plages de fonctionnement (réduit de nuit, relances, ECS)." collapsible>
-            <x-echart id="hist-heatmap-{{ $from }}-{{ $to }}" :option="$heatmap" :height="$heatmapHeight" />
-        </x-filament::section>
-    @endif
-
     <x-filament::section heading="Comparaison des saisons" description="Saison de chauffe de septembre à août.">
         <x-echart id="hist-seasons" :option="$seasonsMonthly" height="320px" />
         <div class="mt-4 overflow-x-auto">

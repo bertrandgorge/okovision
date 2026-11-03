@@ -433,34 +433,6 @@ class ChartFactory
         ];
     }
 
-    /** Carte de chaleur : minutes de combustion par heure et par jour. */
-    public function heatmap(string $from, string $to): array
-    {
-        $rows = DB::table('measurements')
-            ->whereBetween('ts', [$from.' 00:00:00', $to.' 23:59:59'])
-            ->where('pe1_status', DayAggregator::COMBUSTION)
-            ->selectRaw('DATE(ts) as d, HOUR(ts) as h, COUNT(*) as n')
-            ->groupByRaw('DATE(ts), HOUR(ts)')->get();
-        $days = [];
-        for ($d = strtotime($from); $d <= strtotime($to); $d += 86400) {
-            $days[] = date('Y-m-d', $d);
-        }
-        $index = array_flip($days);
-
-        return [
-            'grid' => ['left' => 80, 'right' => 16, 'top' => 8, 'bottom' => 64],
-            'tooltip' => ['formatter' => '@heatmapTooltip'],
-            'xAxis' => ['type' => 'category', 'data' => range(0, 23), 'name' => 'heure', 'splitArea' => ['show' => true]],
-            'yAxis' => ['type' => 'category', 'data' => $days, 'inverse' => true],
-            'visualMap' => ['min' => 0, 'max' => 60, 'calculable' => true, 'orient' => 'horizontal', 'left' => 'center', 'bottom' => 0,
-                'inRange' => ['color' => ['#fff7ed', '#fdba74', '#f97316', '#c2410c', '#7c2d12']]],
-            'series' => [[
-                'type' => 'heatmap',
-                'data' => $rows->map(fn ($r) => [(int) $r->h, $index[$r->d] ?? 0, (int) $r->n])->all(),
-            ]],
-        ];
-    }
-
     /** Distribution des durées de combustion par cycle, selon la T extérieure. */
     public function cycleHistogram(string $from, string $to): array
     {

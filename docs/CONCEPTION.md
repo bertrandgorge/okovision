@@ -84,7 +84,7 @@ du forum Futura-Sciences « chaudières OKOFEN » ; energiesparhaus.at.
 
 - **Laravel 13 / PHP 8.5 / MariaDB-MySQL**, interface **Filament 5** (Livewire), graphiques **ECharts 6**.
 - Les assets sont compilés en local (Vite) : il n'y a pas de Node sur le serveur.
-- Une seule tâche cron sur O2Switch : `php artisan schedule:run`.
+- Une seule tâche cron sur O2Switch : `php artisan schedule:run` (toutes les 5 minutes recommandé).
 
 ```
 app/Okofen/     Catalog (YAML), BoilerClient (API KEBA), BoilerService (lecture/écriture contrôlée), CsvParser, MeasurementImporter
@@ -140,7 +140,7 @@ base : historique, signature et comparaisons de saisons ne sont pas affectés, e
 |---|---|
 | Tableau de bord | état live, indicateurs (T ext/ambiance/chaudière/ECS, kg et cycles du jour, silo, cendrier), journée en cours, recommandations, alertes |
 | Journée | courbes minute par minute synchronisées (températures, frise des états brûleur/pompes, combustion), tableau des cycles |
-| Historique | consommation chauffage/ECS, cycles et allumages à froid, signature énergétique par saison, distribution des durées de cycle, carte de chaleur heure × jour, comparaison des saisons (kg, €, DJU, kg/DJU) |
+| Historique | consommation chauffage/ECS, cycles et allumages à froid, signature énergétique par saison, distribution des durées de cycle, comparaison des saisons (kg, €, DJU, kg/DJU) |
 | Loi d'eau | éditeur visuel (poignées déplaçables et curseurs), nuage des consignes réellement calculées coloré par l'écart d'ambiance, courbe apprise, application à la chaudière |
 | Réglages chaudière | tous les réglages du catalogue (essentiels / avancés), recherche, diff avant écriture, profils, journal |
 | Optimisation | diagnostic chiffré, besoin vs puissance mini, recommandations applicables en un clic, configuration du pilotage par blocs |
@@ -171,8 +171,10 @@ Les assets front (`public/build`) sont compilés en local et **versionnés** : l
    php artisan storage:link
    ```
 4. **cPanel › Domaines** : créer le sous-domaine (ex. `chaudiere.mondomaine.fr`) avec comme **racine `okovision/public`**, puis activer le certificat SSL (AutoSSL / Let's Encrypt).
-5. **cPanel › Tâches Cron** (une seule, chaque minute) :
-   `* * * * * cd ~/okovision && php artisan schedule:run >> /dev/null 2>&1`
+5. **cPanel › Tâches Cron** (une seule) : `*/5 * * * * cd ~/okovision && php artisan schedule:run >> /dev/null 2>&1`.
+   Un cron toutes les 30 min ou toutes les heures fonctionne aussi (les tâches quotidiennes sont sur des heures pleines),
+   avec un décalage équivalent sur les alertes, et sans pilotage par blocs. Les CSV de la chaudière sont récupérés
+   toutes les 30 min (bouton « Actualiser » du tableau de bord pour forcer).
 6. **Accès à la chaudière** : redirection d'un port de la box vers `192.168.1.41:80` (idéalement filtrée sur l'IP du serveur O2Switch), changer le mot de passe par défaut du Touch, puis renseigner l'URL publique dans *Paramètres* et cliquer sur « Tester la connexion ».
 7. **Historique de l'ancienne application** (une fois) : importer le dump dans une seconde base, renseigner `LEGACY_DB_*` dans `.env`, puis lancer `php artisan okovision:import-legacy` (environ 20 minutes pour 12 ans de données).
 

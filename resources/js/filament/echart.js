@@ -7,7 +7,7 @@
  *  - curveEditor : poignées déplaçables pour régler la loi d'eau à la souris (voir setupCurveEditor).
  */
 import * as echarts from 'echarts/core'
-import { BarChart, CustomChart, GaugeChart, HeatmapChart, LineChart, ScatterChart } from 'echarts/charts'
+import { BarChart, CustomChart, GaugeChart, LineChart, ScatterChart } from 'echarts/charts'
 import {
     AxisPointerComponent,
     DataZoomComponent,
@@ -27,7 +27,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import langFR from 'echarts/lib/i18n/langFR.js'
 
 echarts.use([
-    BarChart, CustomChart, GaugeChart, HeatmapChart, LineChart, ScatterChart,
+    BarChart, CustomChart, GaugeChart, LineChart, ScatterChart,
     AxisPointerComponent, DataZoomComponent, DatasetComponent, GraphicComponent, GridComponent, LegendComponent,
     MarkAreaComponent, MarkLineComponent, MarkPointComponent, TitleComponent, ToolboxComponent, TooltipComponent,
     VisualMapComponent, CanvasRenderer,
@@ -83,7 +83,6 @@ const FORMATTERS = {
         const mins = Math.round((e - s) / 60000)
         return `${p.value[3]}<br/>${pad(s.getHours())}:${pad(s.getMinutes())} → ${pad(e.getHours())}:${pad(e.getMinutes())} (${mins} min)`
     },
-    '@heatmapTooltip': (p) => `${p.value[2] === null ? '—' : nf1.format(p.value[2])} min de combustion`,
 }
 
 function hydrate(value) {
