@@ -1,0 +1,88 @@
+services:
+  # Nouvelle application (Laravel 13 / PHP 8.5)
+  app:
+    build: ./docker/app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+    environment:
+      COMPOSER_HOME: /var/www/.composer
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Ordonnanceur Laravel (équivalent du cron O2Switch `* * * * * php artisan schedule:run`)
+  scheduler:
+    build: ./docker/app
+    user: www-data
+    command: ["php", "artisan", "schedule:work"]
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["scheduler"]
+
+  # Ancienne application, pour comparaison pendant la refonte
+  legacy:
+    build: ./docker/legacy
+    ports:
+      - "8081:80"
+    volumes:
+      - ./legacy:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: okovision
+      MARIADB_USER: okovision
+      MARIADB_PASSWORD: okovision
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./tqch3023_okovision.sql:/docker-entrypoint-initdb.d/01-okovision.sql:ro
+      - ./docker/db/02-okovision2.sql:/docker-entrypoint-initdb.d/02-okovision2.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30m
+
+  # Client SQL web : http://localhost:3000
+  dbgate:
+    image: dbgate/dbgate:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      CONNECTIONS: okovision2,legacy
+      LABEL_okovision2: Okovision 2 (nouvelle base)
+      SERVER_okovision2: db
+      PORT_okovision2: 3306
+      USER_okovision2: root
+      PASSWORD_okovision2: root
+      DATABASE_okovision2: okovision2
+      ENGINE_okovision2: mariadb@dbgate-plugin-mysql
+      LABEL_legacy: Okovision (ancienne base)
+      SERVER_legacy: db
+      PORT_legacy: 3306
+      USER_legacy: root
+      PASSWORD_legacy: root
+      DATABASE_legacy: okovision
+      ENGINE_legacy: mariadb@dbgate-plugin-mysql
+    volumes:
+      - dbgate_data:/root/.dbgate
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  dbgate_data:

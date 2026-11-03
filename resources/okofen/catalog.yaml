@@ -1,0 +1,3677 @@
+# Catalogue des champs de la chaudière Okofen Pellematic / KEBA Touch
+# - measurements : colonnes des fichiers CSV (touch_YYYYMMDD.csv) → table measurements
+# - parameters   : réglages lisibles/modifiables via l'API (index.cgi?action=get|set)
+#   valeur affichée = valeur brute API / divisor ; level basic = écran réglages, expert = onglet avancé
+
+version: 1
+source: Généré depuis l'Excel « Traductions Valeurs chaudière.xlsx », l'interface web KEBA Touch V02.00j et l'API de la chaudière. Ce fichier
+  peut être édité à la main.
+groups:
+  hc: Circuit de chauffage
+  dhw: Eau chaude sanitaire
+  boiler: Chaudière
+  ignition: Allumage
+  draft: Dépression
+  flame: Régulation T flamme
+  power: Combustion / puissance
+  runon: Fin de combustion
+  feed: Alimentation granulés
+  level: Niveau / pesée
+  cleaning: Ramonage
+  pump: Pompe chaudière
+  ash: Décendrage
+  freshwater: Module eau fraîche
+  wash: Rinçage
+  system: Système
+  general: Général
+  modes: Modes de fonctionnement
+measurements:
+- column: outside_temp
+  csv: "AT [°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_aussentemperatur_ist"
+  labels:
+    fr: T extérieure
+    en: Outside Temperature
+    de: Außentemperatur
+  description: Température extérieure mesurée par la sonde extérieure.
+- column: boiler_temp
+  csv: "KT Ist [°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:FA[0].L_kesseltemperatur"
+  labels:
+    fr: T chaudière
+    en: Boiler Temp
+    de: Kesseltemperatur
+  description: Température de l'eau dans la chaudière (vue du régulateur de chauffage).
+- column: boiler_temp_set
+  csv: "KT Soll [°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:FA[0].L_kesseltemperatur_soll_anzeige"
+  labels:
+    fr: T chaudière consigne
+    en: Boiler Temp Set
+    de: Kesseltemperatur Soll
+  description: Température chaudière demandée par les circuits (max(T départ consigne + surélévation, T chaudière mini)). 8 °C = pas de demande.
+- column: burner_request
+  csv: BR
+  type: bool
+  api: "CAPPL:FA[0].L_br1"
+  labels:
+    fr: Demande brûleur
+    en: Burner Contact
+    de: Brennerkontakt
+  description: "Contact BR1 : le régulateur demande de la chaleur au brûleur."
+- column: hc1_flow_temp
+  csv: "HK1 VL Ist[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_hk[0].vorlauftemp_ist"
+  labels:
+    fr: Chf1 T départ
+    en: HC1 Flow Temp
+    de: HK1 Vorlauftemperatur
+  description: Température de départ mesurée du circuit de chauffage 1 (après vanne mélangeuse).
+- column: hc1_flow_set
+  csv: "HK1 VL Soll[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_hk[0].vorlauftemp_soll"
+  labels:
+    fr: Chf1 T départ consigne
+    en: HC1 Flow Temp Set
+    de: HK1 Vorlauftemperatur Soll
+  description: Consigne de départ calculée par la loi d'eau. 8 °C = circuit à l'arrêt (limite de chauffe atteinte).
+- column: hc1_room_temp
+  csv: "HK1 RT Ist[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_hk[0].raumtemp_ist"
+  labels:
+    fr: Chf1 T ambiante
+    en: HC1 Room Temp
+    de: HK1 Raumtemperatur
+  description: Température ambiante mesurée par la sonde d'ambiance du circuit 1.
+- column: hc1_room_set
+  csv: "HK1 RT Soll[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_hk[0].raumtemp_soll"
+  labels:
+    fr: Chf1 T ambiante consigne
+    en: HC1 Room Temp Set
+    de: HK1 Raumtemperatur Soll
+  description: Consigne d'ambiance active (confort ou réduit selon le programme horaire).
+- column: hc1_pump
+  csv: HK1 Pumpe
+  type: bool
+  api: "CAPPL:LOCAL.L_hk[0].pumpe"
+  labels:
+    fr: Chf1 Pompe
+    en: HC1 Pump
+    de: HK1 Pumpe
+  description: Circulateur du circuit de chauffage 1.
+- column: dhw1_temp_on
+  csv: "WW1 EinT Ist[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_ww[0].einschaltfuehler_ist"
+  labels:
+    fr: ECS1 T démarrage
+    en: DHW1 On Temperature
+    de: WW1 Ein Temperatur
+  description: Température du ballon d'eau chaude au niveau de la sonde d'enclenchement.
+- column: dhw1_temp_off
+  csv: "WW1 AusT Ist[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_ww[0].ausschaltfuehler_ist"
+  labels:
+    fr: ECS1 T arrêt
+    en: DHW1 Off Temperature
+    de: WW1 Aus Temperatur
+  description: Température du ballon au niveau de la sonde de coupure (identique à la sonde d'enclenchement s'il n'y a qu'une sonde).
+- column: dhw1_set
+  csv: "WW1 Soll[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:LOCAL.L_ww[0].temp_soll"
+  labels:
+    fr: ECS1 consigne
+    en: DHW1 Set
+    de: WW1 Soll
+  description: Consigne ECS active (consigne ou T min ECS selon le programme horaire).
+- column: dhw1_pump
+  csv: WW1 Pumpe
+  type: bool
+  api: "CAPPL:LOCAL.L_ww[0].pumpe"
+  labels:
+    fr: ECS1 Pompe
+    en: DHW1 Pump
+    de: WW1 Pumpe
+  description: "Pompe de charge du ballon ECS : à 1, la chaudière produit de l'eau chaude."
+- column: feed_pump1
+  csv: Zubrp1 Pumpe
+  type: bool
+  api: "CAPPL:LOCAL.L_zubrp[0].pumpe"
+  labels:
+    fr: Pompe de charge (zubringer)
+    en: Feed Pump 1
+    de: Zubringerpumpe 1
+  description: Pompe de transfert/recirculation (Zubringerpumpe).
+- column: pe1_boiler_temp
+  csv: "PE1 KT[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:FA[0].L_kesseltemperatur"
+  labels:
+    fr: PE1 T chaudière
+    en: PE1 Boiler Temp
+    de: PE1 Kesseltemperatur
+  description: Température chaudière mesurée par l'automate du brûleur Pellematic 1.
+- column: pe1_flame_temp
+  csv: "PE1 FRT Ist[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:FA[0].L_feuerraumtemperatur"
+  labels:
+    fr: PE1 T flamme
+    en: PE1 Comb Chamber T
+    de: PE1 Feuerraumtemperatur
+  description: Température du foyer (chambre de combustion).
+- column: pe1_flame_set
+  csv: "PE1 FRT Soll[°C]"
+  type: temperature
+  unit: °C
+  api: "CAPPL:FA[0].L_feuerraumtemperatur_soll"
+  labels:
+    fr: PE1 T flamme consigne
+    en: PE1 Comb Chamber T Set
+    de: PE1 Feuerraumtemperatur Soll
+  description: Consigne de température de foyer (régulation de la modulation).
+- column: pe1_auger_run
+  csv: "PE1 Einschublaufzeit[zs]"
+  type: duration_cs
+  unit: cs
+  api: "CAPPL:FA[0].L_einschublaufzeit"
+  labels:
+    fr: PE1 t alim
+    en: PE1 Auger Run Time
+    de: PE1 Einschubzeit
+  description: "Durée de marche de la vis brûleur par impulsion (en centisecondes). Avec le temps de pause, donne le taux d'alimentation : c'est\
+    \ la base du calcul de consommation."
+- column: pe1_auger_pause
+  csv: "PE1 Pausenzeit[zs]"
+  type: duration_cs
+  unit: cs
+  api: "CAPPL:FA[0].L_pausenzeit"
+  labels:
+    fr: PE1 t pause
+    en: PE1 Rest Time
+    de: PE1 Pausenzeit
+  description: Durée de pause de la vis brûleur entre deux impulsions (en centisecondes).
+- column: pe1_fan
+  csv: "PE1 Luefterdrehzahl[%]"
+  type: percent
+  unit: '%'
+  api: "CAPPL:FA[0].L_luefterdrehzahl"
+  labels:
+    fr: PE1 vitesse V comb
+    en: PE1 Burner Fan Speed
+    de: PE1 Lüfter Drehzahl
+  description: "Vitesse du ventilateur d'air de combustion : bon indicateur de la puissance de modulation."
+- column: pe1_flue_fan
+  csv: "PE1 Saugzugdrehzahl[%]"
+  type: percent
+  unit: '%'
+  api: "CAPPL:FA[0].L_saugzugdrehzahl"
+  labels:
+    fr: PE1 vitesse V fumées
+    en: PE1 Flue Gas Fan Speed
+    de: PE1 Abgasgebläse Drehzahl
+  description: Vitesse de l'extracteur de fumées.
+- column: pe1_draft
+  csv: "PE1 Unterdruck Ist[Pa]"
+  type: pressure
+  unit: Pa
+  api: "CAPPL:FA[0].L_unterdruck"
+  labels:
+    fr: PE1 Dépression
+    en: PE1 Negative Draft
+    de: PE1 Unterdruck
+  description: Dépression mesurée dans le foyer.
+- column: pe1_draft_set
+  csv: "PE1 Unterdruck Soll[Pa]"
+  type: pressure
+  unit: Pa
+  api: "CAPPL:FA[0].unterdruck_sollwert"
+  labels:
+    fr: PE1 Dépression consigne
+    en: PE1 Negative Draft Set
+    de: PE1 Unterdruck Soll
+  description: Consigne de dépression.
+- column: pe1_status
+  csv: PE1 Status
+  type: enum
+  api: "CAPPL:FA[0].L_kesselstatus"
+  labels:
+    fr: PE1 Etat chaudière
+    en: PE1 Boiler Mode
+    de: PE1 Kesselstatus
+  description: Phase de fonctionnement du brûleur.
+  options:
+    fr:
+      0: Fonctionnement permanent
+      1: Démarrage
+      2: Allumage
+      3: Allumage stabilisé (softstart)
+      4: Combustion
+      5: Fin de combustion (post-ventilation)
+      6: Arrêt
+      7: Aspiration
+      8: Défaut cendres
+      9: Défaut granulés
+      10: Commutation granulés
+      11: Défaut
+      97: Arrêt
+      98: Arrêt
+      99: Arrêt
+      100: Arrêt
+      101: Arrêt
+    en:
+      0: Permanent operation
+      1: Start
+      2: Ignition
+      3: Softstart
+      4: Heating full power
+      5: Run on time
+      6: 'Off'
+      7: Suction
+      8: Ash!
+      9: Pellets!
+      10: Pellet switch
+      11: Fault
+      99: 'Off'
+    de:
+      0: Dauerlauf
+      1: Start
+      2: Zündung
+      3: Softstart
+      4: Leistungsbrand
+      5: Nachlauf
+      6: Aus
+      7: Saugen
+      8: '! Asche !'
+      9: '! Pellets !'
+      10: Pell Switch
+      11: Störung
+      99: Aus
+- column: pe1_motor_auger
+  csv: PE1 Motor ES
+  type: bool
+  api: "CAPPL:FA[0].ausgang_motor[11]"
+  labels:
+    fr: PE1 Moteur vis brûleur
+    en: PE1 Motor Delivery
+    de: PE1 Motor Einschub
+  description: Moteur de la vis d'alimentation du brûleur (Einschub).
+- column: pe1_motor_silo
+  csv: PE1 Motor RA
+  type: bool
+  api: "CAPPL:FA[0].ausgang_motor[8]"
+  labels:
+    fr: PE1 Moteur extraction silo
+    en: PE1 Motor RA1
+    de: PE1 Motor RA1
+  description: "Moteur d'extraction du silo (Raumaustragung : vis sans fin silo → trémie)."
+- column: pe1_motor_res1
+  csv: PE1 Motor RES1
+  type: bool
+  api: "CAPPL:FA[0].ausgang_motor[3]"
+  labels:
+    fr: PE1 Moteur Rés1
+    en: PE1 Motor Res1
+    de: PE1 Motor Res1
+  description: "Sortie moteur de réserve 1 (selon l'installation : trémie intermédiaire, 2e vis…)."
+- column: pe1_motor_turbine
+  csv: PE1 Motor TURBINE
+  type: bool
+  api: "CAPPL:FA[0].ausgang_motor[0]"
+  labels:
+    fr: PE1 Turbine
+    en: PE1 Turbine
+    de: PE1 Turbine
+  description: Turbine d'aspiration (systèmes aspirés uniquement).
+- column: pe1_motor_ignition
+  csv: PE1 Motor ZUEND
+  type: bool
+  api: "CAPPL:FA[0].ausgang_motor[1]"
+  labels:
+    fr: PE1 Allumeur
+    en: PE1 Ignition Stick
+    de: PE1 Glühstab
+  description: "Allumeur électrique (bougie) : à 1 lors d'un allumage à froid."
+- column: pe1_pump_uw
+  csv: "PE1 Motor UW[%]"
+  type: percent
+  unit: '%'
+  api: "CAPPL:FA[0].L_drehzahl_uw_ist"
+  labels:
+    fr: PE1 vitesse pompe chaudière
+    en: PE1 UW Speed
+    de: PE1 Drehzahl UW
+  description: Pompe de circulation chaudière (Umwälzpumpe).
+- column: pe1_motor_ash
+  csv: PE1 Motor AV
+  type: bool
+  api: "CAPPL:FA[0].ausgang_motor[2]"
+  labels:
+    fr: PE1 Moteur cendrier ext
+    en: PE1 Motor Ash Box
+    de: PE1 Motor Aschebox
+  description: Vis de décendrage vers le cendrier extérieur.
+- column: pe1_motor_res2
+  csv: PE1 Motor RES2
+  type: bool
+  labels:
+    fr: PE1 Moteur Rés2
+    en: PE1 Motor Res2
+    de: PE1 Motor Res2
+  description: Sortie moteur de réserve 2.
+- column: pe1_motor_ma
+  csv: PE1 Motor MA
+  type: bool
+  labels:
+    fr: PE1 Moteur électrovanne
+    en: PE1 Motor MA
+    de: PE1 Motor MA
+  description: Électrovanne / moteur MA (rinçage échangeur selon modèle).
+- column: pe1_motor_cleaning
+  csv: PE1 Motor RM
+  type: bool
+  api: "CAPPL:FA[0].ausgang_motor[5]"
+  labels:
+    fr: PE1 Moteur ramonage
+    en: PE1 Motor Cleaning Sys
+    de: PE1 Motor Reinigung
+  description: Moteur de nettoyage automatique de l'échangeur (ramonage).
+- column: pe1_motor_sm
+  csv: PE1 Motor SM
+  type: bool
+  labels:
+    fr: PE1 Moteur SM
+    en: PE1 Motor SM
+    de: PE1 Motor SM
+  description: Sortie SM (non documentée).
+live:
+- key: burner_starts
+  name: "CAPPL:FA[0].L_brennerstarts"
+  labels:
+    fr: Démarrages brûleur
+    en: Burner Starts
+    de: Brennerstarts
+- key: ignitions
+  name: "CAPPL:FA[0].L_anzahl_zuendung"
+  labels:
+    fr: Nombre d'allumages
+    en: Number of Ignitions
+    de: Anzahl Zündungen
+- key: burner_hours
+  name: "CAPPL:FA[0].L_brennerlaufzeit_anzeige"
+  labels:
+    fr: Heures de fonctionnement brûleur
+    en: Burner Run Time
+    de: Brennerlaufzeit
+  unit: h
+- key: mean_run_minutes
+  name: "CAPPL:FA[0].L_mittlere_laufzeit"
+  labels:
+    fr: Durée moyenne de fonctionnement
+    en: Average Run Time
+    de: Mittlere Laufzeit
+  unit: min
+- key: standby_hours
+  name: "CAPPL:FA[0].L_sillstandszeit"
+  labels:
+    fr: Durée d'arrêt cumulée
+    en: Down Time
+    de: Stillstandszeit
+  unit: h
+- key: status
+  name: "CAPPL:FA[0].L_kesselstatus"
+  labels:
+    fr: État chaudière
+    en: Boiler Status
+    de: Kesselstatus
+- key: boiler_temp
+  name: "CAPPL:FA[0].L_kesseltemperatur"
+  labels:
+    fr: T chaudière
+    en: Boiler Temp
+    de: Kesseltemperatur
+  divisor: 10
+  unit: °C
+- key: outside_temp
+  name: "CAPPL:LOCAL.L_aussentemperatur_ist"
+  labels:
+    fr: T extérieure
+    en: Outside Temp
+    de: Außentemperatur
+  divisor: 10
+  unit: °C
+- key: hc1_room_temp
+  name: "CAPPL:LOCAL.L_hk[0].raumtemp_ist"
+  labels:
+    fr: T ambiante
+    en: Room Temp
+    de: Raumtemperatur
+  divisor: 10
+  unit: °C
+- key: hc1_flow_temp
+  name: "CAPPL:LOCAL.L_hk[0].vorlauftemp_ist"
+  labels:
+    fr: T départ
+    en: Flow Temp
+    de: Vorlauftemperatur
+  divisor: 10
+  unit: °C
+- key: hc1_flow_set
+  name: "CAPPL:LOCAL.L_hk[0].vorlauftemp_soll"
+  labels:
+    fr: T départ consigne
+    en: Flow Temp Set
+    de: Vorlauftemperatur Soll
+  divisor: 10
+  unit: °C
+- key: dhw1_temp
+  name: "CAPPL:LOCAL.L_ww[0].einschaltfuehler_ist"
+  labels:
+    fr: T ECS
+    en: DHW Temp
+    de: Warmwassertemperatur
+  divisor: 10
+  unit: °C
+- key: flame_temp
+  name: "CAPPL:FA[0].L_feuerraumtemperatur"
+  labels:
+    fr: T flamme
+    en: Comb. Chamber Temp
+    de: Feuerraumtemperatur
+  divisor: 10
+  unit: °C
+- key: fan
+  name: "CAPPL:FA[0].L_luefterdrehzahl"
+  labels:
+    fr: Ventilateur combustion
+    en: Burner Fan
+    de: Lüfterdrehzahl
+  unit: '%'
+- key: hopper_full
+  name: "CAPPL:FA[0].L_pelletsfuellstand"
+  labels:
+    fr: Niveau trémie
+    en: Pellet Level
+    de: Pelletsfüllstand
+- key: touch_version
+  name: "CAPPL:LOCAL.touch[0].version"
+  labels:
+    fr: Version Touch
+    en: Touch Version
+    de: Software Bedienteil
+parameters:
+- name: "CAPPL:FA[0].betriebsart_fa"
+  group: modes
+  type: enum
+  labels:
+    fr: Mode du brûleur
+    en: Pellematic 1
+    de: Pellematic 1
+  short_fr: Mode PE
+  options:
+    0: Arrêt
+    1: Auto
+    2: Marche
+  level: basic
+  description: Mode du brûleur Pellematic.
+  writable: true
+- name: "CAPPL:LOCAL.anlage_betriebsart"
+  group: modes
+  type: enum
+  labels:
+    fr: Mode de l'installation
+    en: Heating Plant
+    de: Anlage
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Auto
+    2: ECS
+  level: basic
+  description: "Mode général de l'installation : Arrêt, Auto (chauffage + ECS) ou ECS seule (été)."
+  writable: true
+- name: "CAPPL:LOCAL.aussentemperatur_mittelungszeit"
+  group: modes
+  type: number
+  unit: min
+  min: 0.0
+  max: 180.0
+  decimals: 0
+  labels:
+    fr: Durée de moyennage de la T extérieure
+    en: Outside Temperature – Time of Average
+    de: Aussentemperatur – Mittelungszeit
+  short_fr: Durée moy Text
+  level: basic
+  description: Durée de moyennage de la T extérieure utilisée pour les limites de chauffe.
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].betriebsart[1]"
+  group: modes
+  type: enum
+  labels:
+    fr: Mode du circuit de chauffage
+    en: HC 1
+    de: Heizkreis 1
+  short_fr: Mode Chauffage
+  options:
+    0: Arrêt
+    1: Auto
+    2: Confort
+    3: Réduit
+  level: basic
+  description: "Mode du circuit de chauffage 1 (installation en Auto) : Arrêt, Auto (programme horaire), Confort permanent, Réduit permanent."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].raumtemp_absenken"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 10.0
+  max: 40.0
+  labels:
+    fr: Consigne ambiance réduit
+    en: Room Temp Set Back
+    de: Raumtemp Absenken
+  short_fr: T amb réduit
+  level: basic
+  description: Consigne d'ambiance en période réduite (nuit/absence).
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].raumtemp_heizen"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 5.0
+  max: 40.0
+  labels:
+    fr: Consigne ambiance confort
+    en: Room Temp Heating
+    de: Raumtemp Heizen
+  short_fr: T amb Confort
+  level: basic
+  description: Consigne d'ambiance en période de confort. Chaque °C modifie la consigne de départ de (1 + pente) °C.
+  writable: true
+- name: "CAPPL:LOCAL.ke_temp_min"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 20.0
+  max: 95.0
+  labels:
+    fr: Température chaudière mini
+    en: Boiler – Temperature Min
+    de: Kessel – Temperatur Min
+  short_fr: T Chaud min
+  level: basic
+  description: Température chaudière minimale demandée dès qu'un circuit chauffe (protection contre la condensation).
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].betriebsart[1]"
+  group: modes
+  type: enum
+  labels:
+    fr: Mode eau chaude (installation en Auto)
+    en: DHW 1
+    de: Warmw 1
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Auto
+    2: Marche
+  level: basic
+  description: Mode ECS (installation en Auto).
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].betriebsart[2]"
+  group: modes
+  type: enum
+  labels:
+    fr: Mode eau chaude (installation en ECS seule)
+    en: DHW 1
+    de: Warmw 1
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Auto
+    2: Marche
+  level: basic
+  description: Mode ECS (installation en ECS seule).
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].einmal_aufbereiten"
+  group: modes
+  type: enum
+  labels:
+    fr: Charge d'eau chaude immédiate
+    en: DHW Boost
+    de: Einmal Aufbereiten
+  short_fr: Dérogation ECS
+  options:
+    0: Arrêt
+    1: Marche
+  level: basic
+  description: Charge ECS unique immédiate (dérogation).
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].temp_absenken"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 80.0
+  labels:
+    fr: "Eau chaude : température mini"
+    en: Water Temp Min
+    de: Wassertemp Min
+  short_fr: T min ECS
+  level: basic
+  description: "Température ECS minimale hors plages horaires : le ballon est rechargé s'il descend sous cette valeur."
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].temp_heizen"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 80.0
+  labels:
+    fr: Consigne eau chaude
+    en: Water Temp Set
+    de: Wassertemp Soll
+  short_fr: T ECS cons
+  level: basic
+  description: Consigne d'eau chaude pendant les plages horaires ECS. Recommandé ≥ 50 °C (légionelles).
+  writable: true
+- name: "CAPPL:FA[0].L_fehler_ruecksetzen"
+  group: modes
+  type: enum
+  labels:
+    fr: Reconnaître l'erreur
+    en: Quit Malfunct
+    de: Fehler Quittieren
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: false
+  snapshot: false
+- name: "CAPPL:LOCAL.frostschutz_min_aussentemp"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: -10.0
+  max: 15.0
+  labels:
+    fr: Prot contre le gel – T de protection
+    en: Frost Protection – Protection Temp
+    de: Frostschutz – Schutztemperatur
+  short_fr: T Protection
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.frostschutz_spuelzeit"
+  group: modes
+  type: number
+  unit: min
+  divisor: 60000
+  min: 0.0
+  max: 60.0
+  decimals: 0
+  labels:
+    fr: Prot contre le gel – heure homogén
+    en: Frost Protection – Scavening Time
+    de: Frostschutz – Spülzeit
+  short_fr: Homogénéisation
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.frostschutz_wartezeit"
+  group: modes
+  type: number
+  unit: min
+  divisor: 60000
+  min: 0.0
+  max: 360.0
+  decimals: 0
+  labels:
+    fr: Prot contre le gel – Durée attente
+    en: Frost Protection – Pause Time
+    de: Frostschutz – Wartezeit
+  short_fr: t attente
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].aktives_zeitprogramm"
+  group: modes
+  type: enum
+  labels:
+    fr: Choix programme
+    en: Time Allocation
+    de: Zeitauswahl
+  short_fr: Prog hor actif
+  options:
+    0: Programme 1
+    1: Programme 2
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].betriebsart[0]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 1
+    en: HC 1
+    de: Heizkreis 1
+  short_fr: Mode Chauffage
+  options:
+    0: Arrêt
+    1: Auto
+    2: Confort
+    3: Réduit
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].betriebsart[2]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 1
+    en: HC 1
+    de: Heizkreis 1
+  short_fr: Mode Chauffage
+  options:
+    0: Arrêt
+    1: Auto
+    2: Confort
+    3: Réduit
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.ke_pumpenfreigabetemp"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 20.0
+  max: 95.0
+  labels:
+    fr: Chaudière – T démarrage pompe
+    en: Boiler – Pump On Temp
+    de: Kessel – Pumpenfreigabetemp
+  short_fr: T limite pompe
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.ke_schutztemp_max"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 20.0
+  max: 95.0
+  labels:
+    fr: Chaudière – Température max
+    en: System – Temperature Max
+    de: System – Temperatur Max
+  short_fr: Tmax chaudière
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].aktives_zeitprogramm"
+  group: modes
+  type: enum
+  labels:
+    fr: Choix programme
+    en: Time Allocation
+    de: Zeitauswahl
+  short_fr: Prog hor actif
+  options:
+    0: Programme 1
+    1: Programme 2
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].betriebsart[0]"
+  group: modes
+  type: enum
+  labels:
+    fr: ECS 1
+    en: DHW 1
+    de: Warmw 1
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Auto
+    2: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zirkp[0].aktives_zeitprogramm"
+  group: modes
+  type: enum
+  labels:
+    fr: Choix programme
+    en: Time Allocation
+    de: Zeitauswahl
+  short_fr: Prog hor actif
+  options:
+    0: Programme 1
+    1: Programme 2
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zirkp[0].betriebsart"
+  group: modes
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Auto
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zirkp[0].hysterese"
+  group: modes
+  type: temperature
+  unit: K
+  divisor: 10
+  min: 1.0
+  max: 40.0
+  labels:
+    fr: Hystérésis marche
+    en: Switch On Hyst
+    de: Einschalthysterese
+  short_fr: Hyst
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zirkp[0].pumpenfreigabetemp"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 90.0
+  labels:
+    fr: t marche pompe
+    en: Pump Switch On Temp
+    de: Pumpenfreigabetemp
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zirkp[0].ruecklauftemp_soll"
+  group: modes
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 90.0
+  labels:
+    fr: Température de coupure
+    en: Switch Off Temp
+    de: Abschalttemperatur
+  short_fr: T retour cons
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zirkp[0].spuelintervall"
+  group: modes
+  type: number
+  unit: min
+  divisor: 60000
+  min: 0.0
+  max: 180.0
+  labels:
+    fr: t. pause
+    en: ''
+    de: Spülintervall
+  short_fr: Intervalle homogén
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zirkp[0].spuelzeit_min"
+  group: modes
+  type: number
+  unit: min
+  divisor: 60000
+  min: 0.0
+  max: 60.0
+  labels:
+    fr: t. marche
+    en: Run Time
+    de: Spülzeit Min
+  short_fr: t homogén Min
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].betriebsart"
+  group: modes
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_hk[0]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 1
+    en: HC 1
+    de: Heizkreis 1
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_hk[1]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 2
+    en: HC 2
+    de: Heizkreis 2
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_hk[2]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 3
+    en: HC 3
+    de: Heizkreis 3
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_hk[3]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 4
+    en: HC 4
+    de: Heizkreis 4
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_hk[4]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 5
+    en: HC 5
+    de: Heizkreis 5
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_hk[5]"
+  group: modes
+  type: enum
+  labels:
+    fr: Chauffage 6
+    en: HC 6
+    de: Heizkreis 6
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_pu[0]"
+  group: modes
+  type: enum
+  labels:
+    fr: BTampon 1
+    en: ACC 1
+    de: Puffer 1
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_pu[1]"
+  group: modes
+  type: enum
+  labels:
+    fr: BTampon 2
+    en: ACC 2
+    de: Puffer 2
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_pu[2]"
+  group: modes
+  type: enum
+  labels:
+    fr: BTampon 3
+    en: ACC 3
+    de: Puffer 3
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_sk[0]"
+  group: modes
+  type: enum
+  labels:
+    fr: Solaire 1
+    en: Solar 1
+    de: Solar 1 Solarkreis 1
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_sk[1]"
+  group: modes
+  type: enum
+  labels:
+    fr: Solaire 1
+    en: Solar 2
+    de: Solar 1 Solarkreis 2
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_sk[2]"
+  group: modes
+  type: enum
+  labels:
+    fr: Solaire 2
+    en: Solar 3
+    de: Solar 2 Solarkreis 1
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_sk[3]"
+  group: modes
+  type: enum
+  labels:
+    fr: Solaire 2
+    en: Solar 4
+    de: Solar 2 Solarkreis 2
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_sk[4]"
+  group: modes
+  type: enum
+  labels:
+    fr: Solaire 3
+    en: Solar 5
+    de: Solar 3 Solarkreis 1
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_sk[5]"
+  group: modes
+  type: enum
+  labels:
+    fr: Solaire 3
+    en: Solar 6
+    de: Solar 3 Solarkreis 2
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_ww[0]"
+  group: modes
+  type: enum
+  labels:
+    fr: ECS 1
+    en: DHW 1
+    de: Warmwasser 1
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_ww[1]"
+  group: modes
+  type: enum
+  labels:
+    fr: ECS 2
+    en: DHW 2
+    de: Warmwasser 2
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.zubrp[0].teilnehmerfreigabe_ww[2]"
+  group: modes
+  type: enum
+  labels:
+    fr: ECS 3
+    en: DHW 3
+    de: Warmwasser 3
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].heizgrenze_absenken"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: -40.0
+  max: 60.0
+  labels:
+    fr: Limite de chauffe (réduit)
+    en: H Limit Set Back
+    de: Heizgrenze Absenken
+  short_fr: Lim Text réduit
+  level: basic
+  description: "Limite de chauffe en réduit : au-dessus de cette T ext moyennée, le circuit s'arrête en période réduite."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].heizgrenze_heizen"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: -40.0
+  max: 60.0
+  labels:
+    fr: Limite de chauffe (confort)
+    en: H Limit Heating
+    de: Heizgrenze Heizen
+  short_fr: Lim Text confort
+  level: basic
+  description: "Limite de chauffe en confort : au-dessus de cette T ext moyennée, le circuit s'arrête. Pour une maison isolée : 15–17 °C."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].heizkurve_fusspunkt"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 20.0
+  max: 45.0
+  labels:
+    fr: Pied de courbe
+    en: Base Point
+    de: Fußpunkt
+  short_fr: Pied
+  level: basic
+  description: "Pied de courbe : température de départ pour une T ext de 15 °C (avec 20 °C de consigne ambiante). Il décale la courbe parallèlement.\
+    \ À ajuster (par pas de 2 à 5 °C) quand il fait trop chaud ou trop froid par T ext de +5 à +15 °C."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].heizkurve_steigung"
+  group: hc
+  type: number
+  divisor: 10
+  min: 0.0
+  max: 4.0
+  decimals: 1
+  labels:
+    fr: Pente de la loi d'eau
+    en: Heating Curve
+    de: Heizkurve
+  short_fr: Courb chf
+  level: basic
+  description: "Pente de la loi d'eau : nombre de °C de départ en plus pour 1 °C extérieur en moins. Convecteurs à ailettes : typiquement 1,2\
+    \ à 1,8. Ajuster par pas de 0,1–0,2, au plus une fois par jour, lorsque la T ext est entre -20 et +5 °C."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].partyprg_aktiviert"
+  group: hc
+  type: enum
+  labels:
+    fr: Programme soirée
+    en: Party Program
+    de: Partyprogramm
+  short_fr: Prog soirée
+  options:
+    0: Arrêt
+    1: Marche
+  level: basic
+  description: "Programme soirée : prolonge le confort."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].raumfuehler_einfluss"
+  group: hc
+  type: number
+  min: 0.0
+  max: 10.0
+  decimals: 1
+  labels:
+    fr: Influence de la sonde d'ambiance
+    en: Room Therm Influence
+    de: Raumfühlereinfluss
+  short_fr: FactCor amb
+  level: basic
+  description: "Influence de la sonde d'ambiance : °C de départ ajoutés par °C d'écart entre consigne et ambiance mesurée. 0 = loi d'eau pure.\
+    \ 2–4 recommandé si la sonde est dans une pièce représentative sans autre source de chaleur."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].raumtemp_plus"
+  group: hc
+  type: number
+  unit: K
+  divisor: 10
+  min: 0.0
+  max: 10.0
+  decimals: 1
+  labels:
+    fr: Hystérésis d'ambiance
+    en: Room Temp Hyst
+    de: Raumtemp Hysterese
+  short_fr: T ambiante Hystérésis
+  level: basic
+  description: "Hystérésis d'ambiance : la pompe du circuit s'arrête lorsque T ambiante > consigne + hystérésis. 0 = désactivé."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].raumtemp_urlaub"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 1.0
+  max: 40.0
+  labels:
+    fr: Consigne ambiance vacances
+    en: Room Temp Vacation
+    de: Raumtemp Urlaub
+  short_fr: T amb Vacances
+  level: basic
+  description: Consigne d'ambiance pendant le programme vacances.
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].ueberhoehung"
+  group: hc
+  type: number
+  unit: K
+  divisor: 10
+  min: 0.0
+  max: 50.0
+  decimals: 1
+  labels:
+    fr: Surélévation chaudière / départ
+    en: Temp Above
+    de: Überhöhung
+  short_fr: Augmentation
+  level: basic
+  description: "Surélévation : écart ajouté à la consigne de départ pour obtenir la consigne chaudière (compense la vanne mélangeuse)."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].urlaubsprg_aktiviert"
+  group: hc
+  type: enum
+  labels:
+    fr: Programme vacances
+    en: Vacation Function
+    de: Urlaubsprogramm
+  short_fr: Program vacances
+  options:
+    0: Arrêt
+    1: Marche
+  level: basic
+  description: Programme vacances (température vacances).
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].vorhaltezeit"
+  group: hc
+  type: number
+  unit: min
+  min: 0.0
+  max: 180.0
+  decimals: 1
+  labels:
+    fr: Temps d'anticipation
+    en: Advanced Run Up
+    de: Vorhaltezeit
+  short_fr: t anticip
+  level: basic
+  description: "Temps d'anticipation : démarrage du chauffage avant le début de la plage confort."
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].vorlauftemp_max"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 80.0
+  labels:
+    fr: Température de départ maxi
+    en: Flow Temp Max
+    de: Vorlauftemp Max
+  short_fr: T dép max
+  level: basic
+  description: Température de départ maximale du circuit (sécurité émetteurs).
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].vorlauftemp_min"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 80.0
+  labels:
+    fr: Température de départ mini
+    en: Flow Temp Min
+    de: Vorlauftemp Min
+  short_fr: T dép min
+  level: basic
+  description: Température de départ minimale lorsque le circuit chauffe.
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_aktiviert"
+  group: hc
+  type: enum
+  labels:
+    fr: RProg. Plancher chf
+    en: Screed Program
+    de: Modus
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_anzahl_tage"
+  group: hc
+  type: number
+  min: 0.0
+  max: 31.0
+  decimals: 0
+  labels:
+    fr: Durée Prog. PC
+    en: Duration Screed Prg
+    de: Anzahl Estrichtage
+  short_fr: Nbre jour
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[0]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 1
+    en: Flow Temp Day 1
+    de: Vorlauftemp Tag1
+  short_fr: T départ j 1
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[10]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 11
+    en: Flow Temp Day 11
+    de: Vorlauftemp Tag11
+  short_fr: T départ j 11
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[11]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 12
+    en: Flow Temp Day 12
+    de: Vorlauftemp Tag12
+  short_fr: T départ j 12
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[12]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 13
+    en: Flow Temp Day 13
+    de: Vorlauftemp Tag13
+  short_fr: T départ j 13
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[13]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 14
+    en: Flow Temp Day 14
+    de: Vorlauftemp Tag14
+  short_fr: T départ j 14
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[14]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 15
+    en: Flow Temp Day 15
+    de: Vorlauftemp Tag15
+  short_fr: T départ j 15
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[15]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 16
+    en: Flow Temp Day 16
+    de: Vorlauftemp Tag16
+  short_fr: T départ j 16
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[16]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 17
+    en: Flow Temp Day 17
+    de: Vorlauftemp Tag17
+  short_fr: T départ j 17
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[17]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 18
+    en: Flow Temp Day 18
+    de: Vorlauftemp Tag18
+  short_fr: T départ j 18
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[18]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 19
+    en: Flow Temp Day 19
+    de: Vorlauftemp Tag19
+  short_fr: T départ j 19
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[19]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 20
+    en: Flow Temp Day 20
+    de: Vorlauftemp Tag20
+  short_fr: T départ j 20
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[1]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 2
+    en: Flow Temp Day 2
+    de: Vorlauftemp Tag2
+  short_fr: T départ j 2
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[20]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 21
+    en: Flow Temp Day 21
+    de: Vorlauftemp Tag21
+  short_fr: T départ j 21
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[21]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 22
+    en: Flow Temp Day 22
+    de: Vorlauftemp Tag22
+  short_fr: T départ j 22
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[22]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 23
+    en: Flow Temp Day 23
+    de: Vorlauftemp Tag23
+  short_fr: T départ j 23
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[23]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 24
+    en: Flow Temp Day 24
+    de: Vorlauftemp Tag24
+  short_fr: t départ j 24
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[24]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 25
+    en: Flow Temp Day 25
+    de: Vorlauftemp Tag25
+  short_fr: T départ j 25
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[25]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 26
+    en: Flow Temp Day 26
+    de: Vorlauftemp Tag26
+  short_fr: T départ j 26
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[26]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 27
+    en: Flow Temp Day 27
+    de: Vorlauftemp Tag27
+  short_fr: T départ j 27
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[27]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 28
+    en: Flow Temp Day 28
+    de: Vorlauftemp Tag28
+  short_fr: T départ j 28
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[28]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 29
+    en: Flow Temp Day 29
+    de: Vorlauftemp Tag29
+  short_fr: T départ j 29
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[29]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 30
+    en: Flow Temp Day 30
+    de: Vorlauftemp Tag30
+  short_fr: T départ j 30
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[2]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 3
+    en: Flow Temp Day 3
+    de: Vorlauftemp Tag3
+  short_fr: T départ j 3
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[30]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 31
+    en: Flow Temp Day 31
+    de: Vorlauftemp Tag31
+  short_fr: T départ j 31
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[3]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 4
+    en: Flow Temp Day 4
+    de: Vorlauftemp Tag4
+  short_fr: T départ j 4
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[4]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 5
+    en: Flow Temp Day 5
+    de: Vorlauftemp Tag5
+  short_fr: T départ j 5
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[5]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 6
+    en: Flow Temp Day 6
+    de: Vorlauftemp Tag6
+  short_fr: T départ j 6
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[6]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 7
+    en: Flow Temp Day 7
+    de: Vorlauftemp Tag7
+  short_fr: T départ j 7
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[7]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 8
+    en: Flow Temp Day 8
+    de: Vorlauftemp Tag8
+  short_fr: T départ j 8
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[8]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 9
+    en: Flow Temp Day 9
+    de: Vorlauftemp Tag9
+  short_fr: T départ j 9
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].estrich_vorlauf_soll[9]"
+  group: hc
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 0.0
+  max: 95.0
+  labels:
+    fr: T départ jour 10
+    en: Flow Temp Day 10
+    de: Vorlauftemp Tag10
+  short_fr: T départ jour 10
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].mischer_max_auf_zeit"
+  group: hc
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 20.0
+  decimals: 1
+  labels:
+    fr: VanMel ouverture
+    en: Mixer Open
+    de: Mischer Auf
+  short_fr: VanMel ouv
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].mischer_max_aus_zeit"
+  group: hc
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 30.0
+  decimals: 1
+  labels:
+    fr: VanMel pause
+    en: Mixer Off
+    de: Mischer Aus
+  short_fr: VanMel Pause
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].mischer_max_zu_zeit"
+  group: hc
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 20.0
+  decimals: 1
+  labels:
+    fr: VanMel fermeture
+    en: Mixer Close
+    de: Mischer Zu
+  short_fr: VanMel fer
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].mischer_regelbereich_quelle"
+  group: hc
+  type: number
+  unit: K
+  divisor: 10
+  min: 0.0
+  max: 20.0
+  decimals: 1
+  labels:
+    fr: Plage réglage TC
+    en: Control Range BT
+    de: Regelbereich KT
+  short_fr: Plage cor TC
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].mischer_regelbereich_vorlauf"
+  group: hc
+  type: number
+  unit: K
+  divisor: 10
+  min: 0.0
+  max: 20.0
+  decimals: 1
+  labels:
+    fr: Plage réglage TD
+    en: Control Range Flow
+    de: Regelbereich VL
+  short_fr: Plage cor TD
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].mischer_vorhanden"
+  group: hc
+  type: enum
+  labels:
+    fr: Type circuit
+    en: Mixer Present
+    de: Mischer vorhanden
+  short_fr: TypeChauffage
+  options:
+    0: direct
+    1: mélangé
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].partyprg_endzeit"
+  group: hc
+  type: datetime
+  labels:
+    fr: Fin
+    en: Stop Time
+    de: Endzeit
+  short_fr: Prog soirée jusau'à
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].quellentempverlauf_anstiegstemp"
+  group: hc
+  type: number
+  unit: K
+  divisor: 10
+  min: 0.0
+  max: 20.0
+  decimals: 1
+  labels:
+    fr: Evol T chaudière ETC – Hausse ETC
+    en: Boiler Temp Curve – Temp Rise
+    de: Kesseltemp Verlauf – Temp Anstieg
+  short_fr: Hausse T
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].quellentempverlauf_regelbereich"
+  group: hc
+  type: number
+  unit: K
+  divisor: 10
+  min: 1.0
+  max: 20.0
+  decimals: 1
+  labels:
+    fr: Evol T chaudière ETC – Plage de réglage
+    en: Boiler Temp Curve – Control Range
+    de: Kesseltemp Verlauf – Regelbereich
+  short_fr: Plage cor
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].urlaubsprg_ende"
+  group: hc
+  type: datetime
+  labels:
+    fr: Fin
+    en: Stop Time
+    de: Endzeit
+  short_fr: Fin prog vacances
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.hk[0].urlaubsprg_start"
+  group: hc
+  type: datetime
+  labels:
+    fr: Début
+    en: Start Time
+    de: Startzeit
+  short_fr: Program vacances début
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].hysterese"
+  group: dhw
+  type: number
+  unit: K
+  divisor: 10
+  min: 0.0
+  max: 25.0
+  decimals: 0
+  labels:
+    fr: Hystérésis eau chaude
+    en: Switch On Hyst
+    de: Einschalthysterese
+  short_fr: Hystérésis
+  level: basic
+  description: "Hystérésis ECS : la charge démarre quand la T du ballon descend de cette valeur sous la consigne. Une valeur plus grande espace\
+    \ les démarrages."
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].legionellen_wochentag"
+  group: dhw
+  type: enum
+  labels:
+    fr: Jour du cycle anti-légionelles
+    en: Legionella Protection
+    de: Legionellenschutz
+  short_fr: Prot légionnelose
+  options:
+    0: Dimanche
+    1: Lundi
+    2: Mardi
+    3: Mercredi
+    4: Jeudi
+    5: Vendredi
+    6: Samedi
+    7: Arrêt
+  level: basic
+  description: Jour du cycle anti-légionelles hebdomadaire (montée à ~65 °C).
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].prioritaet"
+  group: dhw
+  type: enum
+  labels:
+    fr: Priorité eau chaude
+    en: Preference
+    de: Vorrang
+  short_fr: Prio
+  options:
+    0: Marche
+    1: Arrêt
+  level: basic
+  description: "Priorité ECS : le circuit de chauffage est réduit pendant la charge du ballon."
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].ueberhoehung"
+  group: dhw
+  type: number
+  unit: K
+  divisor: 10
+  min: 0.0
+  max: 20.0
+  decimals: 1
+  labels:
+    fr: Surélévation eau chaude
+    en: Temp Above
+    de: Überhöhung
+  short_fr: Augmentation
+  level: basic
+  description: "Surélévation ECS : écart chaudière/ballon pendant la charge."
+  writable: true
+- name: "CAPPL:LOCAL.ww[0].nachlaufzeit"
+  group: dhw
+  type: number
+  unit: min
+  divisor: 60000
+  min: 0.0
+  max: 60.0
+  decimals: 0
+  labels:
+    fr: Postfonctionnement
+    en: Run On Time
+    de: Nachlaufzeit
+  short_fr: t postfonct
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_abschalttemperatur"
+  group: boiler
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 70.0
+  max: 95.0
+  decimals: 0
+  labels:
+    fr: Température de coupure
+    en: Switch Off Temp
+    de: Abschalttemperatur
+  short_fr: T coupure
+  level: basic
+  description: "Température de coupure : le brûleur s'arrête quand la chaudière l'atteint."
+  writable: true
+- name: "CAPPL:FA[0].pe_einschalthysterese_smart"
+  group: boiler
+  type: temperature
+  unit: K
+  divisor: 10
+  min: 2.0
+  max: 15.0
+  labels:
+    fr: Hystérésis de redémarrage
+    en: Switch On Hysteresis
+    de: Einschalthysterese
+  short_fr: Hyst enclench
+  level: basic
+  description: "Hystérésis de redémarrage : le brûleur redémarre quand T chaudière < T coupure − hystérésis (s'il y a une demande). Augmenter\
+    \ cette valeur réduit le nombre de démarrages (cycles plus longs)."
+  writable: true
+- name: "CAPPL:FA[0].pe_kesseltemperatur_soll"
+  group: boiler
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 60.0
+  max: 90.0
+  decimals: 0
+  labels:
+    fr: Température de régulation chaudière
+    en: Control Temperature
+    de: Regeltemperatur
+  short_fr: T Chaudière cons
+  level: basic
+  description: "Température de régulation de la chaudière : le brûleur module pour la maintenir. Si un circuit demande plus, c'est la demande\
+    \ qui s'applique."
+  writable: true
+- name: "CAPPL:FA[0].pe_agt_min"
+  group: boiler
+  type: temperature
+  unit: °C
+  divisor: 10
+  min: 30.0
+  max: 300.0
+  decimals: 0
+  labels:
+    fr: T fumées mini
+    en: AGT Minimum
+    de: AGT Minimum
+  short_fr: T fumées minimum
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_ansprechzeit_kap_ra"
+  group: boiler
+  type: number
+  unit: cs
+  divisor: 100
+  min: 1.0
+  max: 50.0
+  decimals: 0
+  labels:
+    fr: Capteur capacitif – H contrôle trémie
+    en: Capacitive Sensor – Reaction T Kap Hopper
+    de: Kapazitiver Sensor – Ansprechz ZWB
+  short_fr: T control KAP RA
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_ansprechzeit_kap_zw"
+  group: boiler
+  type: number
+  unit: cs
+  divisor: 100
+  min: 1.0
+  max: 50.0
+  decimals: 0
+  labels:
+    fr: Capteur capacitif – Heure contrôle
+    en: Capacitive Sensor – Reaction T Kap
+    de: Kapazitiver Sensor – Ansprechzeit
+  short_fr: T control kap ZW
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_belueftungszeit_start"
+  group: boiler
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 200.0
+  decimals: 0
+  labels:
+    fr: Ventilation – Ventilateur comb
+    en: Ariation – Time
+    de: Belüftung – Zeit
+  short_fr: Début ventilation
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_brenneranforderung_std_imp"
+  group: boiler
+  type: enum
+  decimals: 0
+  labels:
+    fr: Fonct brûleur Std/Imp
+    en: Burner Require Std/Imp
+    de: Brenneranforderung
+  short_fr: Dem brûl Standard/Impulsion
+  options:
+    0: Standard
+    1: Impulsion
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_einschub_min"
+  group: boiler
+  type: number
+  unit: cs
+  divisor: 100
+  min: 3.0
+  max: 50.0
+  decimals: 0
+  labels:
+    fr: Limite – t Vis brûleur min
+    en: Limits – Auger Run Min
+    de: Grenzen – Einschub Minimum
+  short_fr: Alim Vbrûl min
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_kap_sensor_ra_aktiv"
+  group: boiler
+  type: enum
+  decimals: 0
+  labels:
+    fr: Capteur capacitif – RA actif
+    en: Capacitive Sensor – RA Active
+    de: Kapazitiver Sensor – RA aktiv
+  short_fr: Activer Cap Capa RA
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_kap_sensor_zw_aktiv"
+  group: boiler
+  type: enum
+  decimals: 0
+  labels:
+    fr: Capteur capacitif – ZW actif
+    en: Capacitive Sensor – ZW Active
+    de: Kapazitiver Sensor – ZW aktiv
+  short_fr: Activer Cap Capa ZW
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_kesselleistung"
+  group: boiler
+  type: number
+  min: 8.0
+  max: 56.0
+  decimals: 0
+  labels:
+    fr: Puissance paramétrée de la chaudière
+    en: Power Step
+    de: Leistungsstufe
+  short_fr: P chaudière
+  level: expert
+  description: "Puissance nominale paramétrée (kW). Réduire la puissance abaisse aussi la puissance minimale de modulation : utile si la chaudière\
+    \ est surdimensionnée. Réglage technicien."
+  writable: true
+- name: "CAPPL:FA[0].pe_kesselmindestlaufzeit"
+  group: boiler
+  type: number
+  unit: min
+  divisor: 60000
+  min: 1.0
+  max: 30.0
+  decimals: 0
+  labels:
+    fr: t mini marche chaud
+    en: Boiler Min Run Time
+    de: Kessel min Laufzeit
+  short_fr: T fonct mini chaud
+  level: expert
+  description: Durée minimale de fonctionnement du brûleur.
+  writable: true
+- name: "CAPPL:FA[0].pe_luefter_min"
+  group: boiler
+  type: number
+  unit: '%'
+  min: 10.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Limite – Vitesse vent comb
+    en: Limits – Burner Fan Min
+    de: Grenzen – Lüfter Minimum
+  short_fr: Vmin VentComb
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_luefterdrehzahl_start"
+  group: boiler
+  type: number
+  unit: '%'
+  min: 10.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Ventilation – Ventilateur comb
+    en: Ariation – Burner Fan
+    de: Belüftung – Lüfter
+  short_fr: Vit VComb début
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_minimum_stillstandszeit"
+  group: boiler
+  type: number
+  unit: min
+  divisor: 60000
+  min: 1.0
+  max: 60.0
+  decimals: 0
+  labels:
+    fr: t min sans allum
+    en: Min Run Time No Ignition
+    de: Min Laufz ohne Zuend
+  short_fr: tmin sans allumeur
+  level: expert
+  description: Durée d'arrêt minimale avant un nouvel allumage par allumeur.
+  writable: true
+- name: "CAPPL:FA[0].pe_raumaustragung_verzoegerung"
+  group: boiler
+  type: number
+  unit: '%'
+  min: 10.0
+  max: 90.0
+  decimals: 0
+  labels:
+    fr: Retard extr
+    en: Delivery System Delay
+    de: RA Verzögerung
+  short_fr: Retard Extraction
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_saugzug_min"
+  group: boiler
+  type: number
+  unit: '%'
+  min: 5.0
+  max: 70.0
+  decimals: 0
+  labels:
+    fr: Limite – Vitesse vent fumées
+    en: Limits – Flue Gas Fan Min
+    de: Grenzen – Abgasgebl Minimum
+  short_fr: Vit min Vent fumées
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_saugzugdrehzahl_start"
+  group: boiler
+  type: number
+  unit: '%'
+  min: 10.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Ventilation – Vent fumées
+    en: Ariation – Flue Gas Fan
+    de: Belüftung – Abgasgebl
+  short_fr: Début Modul Vfumées
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].pe_stoermeldemodus"
+  group: boiler
+  type: enum
+  decimals: 0
+  labels:
+    fr: Mode message erreur
+    en: Malfunction Mode
+    de: Störmeldemodus
+  short_fr: Mode défauts
+  options:
+    0: Continu
+    1: Cont/Clign
+    2: Clignotant
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].leistung_brennstoffkorrektur"
+  group: power
+  type: number
+  min: -10.0
+  max: 10.0
+  decimals: 0
+  labels:
+    fr: Correction combustible
+    en: Fuel Adjustment
+    de: Brennstoffkorrektur
+  short_fr: Cor combustible
+  level: expert
+  description: Correction combustible (qualité des granulés).
+  writable: true
+- name: "CAPPL:FA[0].leistung_einschub_technik"
+  group: power
+  type: number
+  unit: cs
+  divisor: 100
+  min: -100.0
+  max: 200.0
+  decimals: 0
+  labels:
+    fr: t marche vis brûleur
+    en: Burner Auger Run Time
+    de: Einschubzeit
+  short_fr: Moteur VBrûl ++
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].leistung_luefter_technik"
+  group: power
+  type: number
+  unit: '%'
+  min: -50.0
+  max: 50.0
+  decimals: 0
+  labels:
+    fr: Vent comb
+    en: Burner Fan
+    de: Lüfter
+  short_fr: Vent Comb ++
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].leistung_regelzeit_auf"
+  group: power
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 10.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: t rég marche
+    en: Control Time Open
+    de: Regelzeit Auf
+  short_fr: T cor vers le haut
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].leistung_regelzeit_zu"
+  group: power
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 10.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: t rég arrêt
+    en: Control Time Close
+    de: Regelzeit Ab
+  short_fr: T cor vers le bas
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].leistung_saugzug_technik"
+  group: power
+  type: number
+  unit: '%'
+  min: -50.0
+  max: 50.0
+  decimals: 0
+  labels:
+    fr: Vent fumées
+    en: Flue Gas Fan
+    de: Abgasgebläse
+  short_fr: Vent fumées ++
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].leistung_zeit_flammueberwachung"
+  group: power
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 300.0
+  max: 1800.0
+  decimals: 0
+  labels:
+    fr: tempo Tflam cor
+    en: Time Flame Supervision
+    de: Zeit Flammüberwachung
+  short_fr: T défaut Tflamme
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].leistung_zeit_sollwerterhoehung"
+  group: power
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 3000.0
+  decimals: 0
+  labels:
+    fr: t augm consigne
+    en: Time Set Value Plus
+    de: Zeit Sollwerterhöhung
+  short_fr: T pour augm consigne
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_begrenzung_oben"
+  group: flame
+  type: number
+  unit: '%'
+  min: 0.0
+  max: 200.0
+  decimals: 0
+  labels:
+    fr: Correcteur plafond
+    en: Limit Up
+    de: Begrenzung Oben
+  short_fr: Corr max Tflam
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_begrenzung_unten"
+  group: flame
+  type: number
+  unit: '%'
+  min: 0.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Correcteur plancher
+    en: Limit Down
+    de: Begrenzung Unten
+  short_fr: Cor min Tflam bas
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_minimum"
+  group: flame
+  type: number
+  unit: °C
+  divisor: 10
+  min: 50.0
+  max: 200.0
+  decimals: 0
+  labels:
+    fr: Température mini
+    en: Min Temp
+    de: Minimum Temperatur
+  short_fr: T min flamme
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_nachstellzeit"
+  group: flame
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 1000.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Coef intégral
+    en: PID Controller – Integration Time
+    de: PID Regler – Zeit Integralanteil
+  short_fr: Coef intégr
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_regelung"
+  group: flame
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Mode Tfla
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_technik"
+  group: flame
+  type: number
+  unit: °C
+  divisor: 10
+  min: -300.0
+  max: 300.0
+  decimals: 0
+  labels:
+    fr: Consigne ++
+    en: Set Value ++
+    de: Sollwert ++
+  short_fr: T flamme ++
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_verstaerkung"
+  group: flame
+  type: number
+  unit: '%'
+  min: 0.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Gain
+    en: PID Controller – Gain
+    de: PID Regler – Verstärkung
+  short_fr: Gain
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frt_vorhaltezeit"
+  group: flame
+  type: number
+  unit: cs
+  divisor: 100
+  min: 2.0
+  max: 320.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Coef dérivé
+    en: PID Controller – Diff Time
+    de: PID Regler – Zeit Diff Anteil
+  short_fr: Coef dériv
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_fehlerzeit"
+  group: draft
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 0.0
+  max: 600.0
+  decimals: 0
+  labels:
+    fr: tempo défaut
+    en: Malfunction Time
+    de: Fehlerzeit
+  short_fr: t défaut dépression
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_maximum"
+  group: draft
+  type: number
+  unit: EH
+  divisor: 10
+  min: 0.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Maximum
+    en: Maximum
+    de: Maximum
+  short_fr: Dépression max
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_minimum"
+  group: draft
+  type: number
+  unit: EH
+  divisor: 10
+  min: 0.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Minimum
+    en: Minimum
+    de: Minimum
+  short_fr: Dépression min
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_modus"
+  group: draft
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Mode Dépression
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_nachstellzeit"
+  group: draft
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 0.1
+  max: 3000.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Coef intégral
+    en: PID Controller – Integration Time
+    de: PID Regler – Zeit Integralanteil
+  short_fr: Coef intégr
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_sollwert"
+  group: draft
+  type: number
+  unit: EH
+  divisor: 10
+  min: 0.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Consigne
+    en: Set Value
+    de: Sollwert
+  short_fr: Dépression consigne
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_verstaerkung"
+  group: draft
+  type: number
+  unit: '%'
+  min: 1.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Gain
+    en: PID Controller – Gain
+    de: PID Regler – Verstärkung
+  short_fr: Gain
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_vorhaltezeit"
+  group: draft
+  type: number
+  unit: cs
+  divisor: 100
+  min: 1.0
+  max: 3200.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Coef dérivé
+    en: PID Controller – Diff Time
+    de: PID Regler – Zeit Diff Anteil
+  short_fr: Coef dériv
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].unterdruck_waschen"
+  group: draft
+  type: number
+  unit: EH
+  divisor: 10
+  min: 0.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Rinçage
+    en: Washing
+    de: Waschen
+  short_fr: Dépression Rinçage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_1versuch_zu"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1000.0
+  max: 2000.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – BSK 1er essai ferm
+    en: Delivery Period – BSK 1st Try Close
+    de: Einschubzyklus – BSK 1er Versuch Zu
+  short_fr: BSK essai 1 ferm
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_2versuch_auf"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 500.0
+  max: 1750.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – BSK 2ème essai ouv
+    en: Delivery Period – BSK 2nd Try Open
+    de: Einschubzyklus – BSK 2er Versuch Auf
+  short_fr: BSK essai 2 ouv
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_2versuch_zu"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 750.0
+  max: 1200.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – BSK 2ème essai ferm
+    en: Delivery Period – BSK 2nd Try Close
+    de: Einschubzyklus – BSK 2er Versuch Zu
+  short_fr: BSK essai 2 ferm
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_3versuch_auf"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 200.0
+  max: 900.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – BSK 3ème essai ouv
+    en: Delivery Period – BSK 3rd Try Open
+    de: Einschubzyklus – BSK 3er Versuch Auf
+  short_fr: BSK 3 essai ouv
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_3versuch_zu"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 450.0
+  max: 750.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – BSK 3ème essai ferm
+    en: Delivery Period – BSK 3rd Try Close
+    de: Einschubzyklus – BSK 3er Versuch Zu
+  short_fr: BSK essai 3 ferm
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_4versuch_auf"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 200.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – BSK 4ème essai ouv
+    en: Delivery Period – BSK 4th Try Open
+    de: Einschubzyklus – BSK 4er Versuch Auf
+  short_fr: BSK essai 4 ouv
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_4versuch_zu"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 270.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – BSK 4ème essai ferm
+    en: Delivery Period – BSK 4th Try Close
+    de: Einschubzyklus – BSK 4er Versuch Zu
+  short_fr: BSK essai 4 ferm
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_begrenzung_agt_max"
+  group: ignition
+  type: number
+  unit: °C
+  divisor: 10
+  min: 1.0
+  max: 400.0
+  decimals: 0
+  labels:
+    fr: T fumées max
+    en: Max Flue Gas Temp
+    de: Max Abgastemperatur
+  short_fr: T fumées max
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_begrenzung_agt_min"
+  group: ignition
+  type: number
+  unit: °C
+  divisor: 10
+  min: 1.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: T fumées min
+    en: Min Flue Gas Temp
+    de: Min Abgastemperatur
+  short_fr: T fumées min
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_einschub"
+  group: ignition
+  type: number
+  unit: cs
+  divisor: 100
+  min: 6.0
+  max: 200.0
+  decimals: 0
+  labels:
+    fr: t marche vis brûleur
+    en: Burner Auger Run Time
+    de: Einschubzeit
+  short_fr: t fonct Vbrûl allu
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_hyterese_agt"
+  group: ignition
+  type: number
+  unit: K
+  divisor: 10
+  min: 10.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Hystérésis T fumées
+    en: Hyst Flue Gas Temp
+    de: Hysterese Abgastemp
+  short_fr: Hystérésis T Fumées
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_luefterdrehzahl"
+  group: ignition
+  type: number
+  unit: '%'
+  min: 10.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Vent comb
+    en: Burner Fan
+    de: Lüfter
+  short_fr: Vit VComb
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_pause"
+  group: ignition
+  type: number
+  unit: cs
+  divisor: 100
+  min: 1.0
+  max: 800.0
+  decimals: 0
+  labels:
+    fr: t pause vis brûleur
+    en: Rest Time
+    de: Pausenzeit
+  short_fr: t pause Vbrûl allu
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_saugzugdrehzahl"
+  group: ignition
+  type: number
+  unit: '%'
+  min: 30.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Vent fumées
+    en: Flue Gas Fan
+    de: Abgasgebläse
+  short_fr: Vit Vent fumées
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_softstart_luefter"
+  group: ignition
+  type: number
+  unit: '%'
+  min: 10.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Allumage stab – Excés d'air
+    en: Softstart – Air Flow Rate
+    de: Softstart – Lüfter
+  short_fr: Vent Comb Allustab
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_softstart_saugzug"
+  group: ignition
+  type: number
+  unit: '%'
+  min: 30.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Allumage stab – Vent fumées
+    en: Softstart – Flue Gas Fan
+    de: Softstart – Abgasgebläse
+  short_fr: Vent fumées Allustab
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_softstart_tempanstieg"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 300.0
+  decimals: 0
+  labels:
+    fr: Allumage stab – Var T dt/dT
+    en: Softstart – Temp Change dt/dT
+    de: Softstart – Temp Änderung dt/dT
+  short_fr: Hauss T Allustab
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].zuend_startzeit"
+  group: ignition
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 600.0
+  max: 3000.0
+  decimals: 0
+  labels:
+    fr: Cycle d'alimentation – Heure allumage
+    en: Delivery Period – Start Time Ignition
+    de: Einschubzyklus – Startzeit Zündung
+  short_fr: Début allumage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_agt_plus_luefter_aus"
+  group: runon
+  type: number
+  unit: °C
+  divisor: 10
+  min: 1.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Tfum-Tchd ventc Off
+    en: RGT+ BT Burner Fan Off
+    de: AGT + KT Lüfter aus
+  short_fr: VComb/Tfum stop
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_agt_plus_saugzug_aus"
+  group: runon
+  type: number
+  unit: °C
+  divisor: 10
+  min: 1.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Tfum-Tchd ventf Off
+    en: RGT+ BT Flue Gas Fan Off
+    de: AGT + KT Abgasgebl aus
+  short_fr: VFum/Tfum stop
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_frt_plus_luefter_aus"
+  group: runon
+  type: number
+  unit: °C
+  divisor: 10
+  min: 1.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Tfla-Tchd ventc Off
+    en: FRT+ BT Burner Fan Off
+    de: FRT + KT Lüfter aus
+  short_fr: VComb/Tflam stop
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_frt_plus_saugzug_aus"
+  group: runon
+  type: number
+  unit: °C
+  divisor: 10
+  min: 1.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Tfla-Tchd ventf Off
+    en: FRT+ BT Flue Gas Fan Off
+    de: FRT + KT Abgasgebl aus
+  short_fr: Vfum/TFlam stop
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_luefter_nachlaufzeit"
+  group: runon
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 3000.0
+  decimals: 0
+  labels:
+    fr: Postfonct vent comb
+    en: Burner Fan Run On Time
+    de: Luefter Nachlaufzeit
+  short_fr: Postfonct VComb
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_luefterdrehzahl_nachlauf"
+  group: runon
+  type: number
+  unit: '%'
+  min: 12.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Vent comb
+    en: Burner Fan
+    de: Lüfter
+  short_fr: Vit VComb fin comb
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_saugzug_nachlaufzeit"
+  group: runon
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 3000.0
+  decimals: 0
+  labels:
+    fr: Postfonct vent fum
+    en: Flue Gas Fan Run On Time
+    de: Abgasgebl Nachlaufzeit
+  short_fr: Postfonct Vfumées
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].nachlauf_saugzugdrehzahl_nachlauf"
+  group: runon
+  type: number
+  unit: '%'
+  min: 30.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Vent fumées
+    en: Flue Gas Fan
+    de: Abgasgebläse
+  short_fr: Vit Vfumées fin Comb
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].turbine_nachlauf"
+  group: feed
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 0.0
+  max: 60.0
+  decimals: 0
+  labels:
+    fr: Postfonctionnement
+    en: Run On Time
+    de: Nachlaufzeit RA
+  short_fr: Ponstfonct Turbine
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].turbine_pause_ra_vacuum"
+  group: feed
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 0.0
+  max: 60.0
+  decimals: 0
+  labels:
+    fr: t pause Moteur RA
+    en: Pause RA Motor
+    de: Pause RA Motor
+  short_fr: Pause RA Aspi
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].turbine_saugintervall"
+  group: feed
+  type: number
+  unit: min
+  min: 2.0
+  max: 300.0
+  decimals: 0
+  labels:
+    fr: intervalle aspiration
+    en: Suction Interval
+    de: Saugintervall
+  short_fr: Interval aspi
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].turbine_saugzeit_max"
+  group: feed
+  type: number
+  unit: min
+  divisor: 60000
+  min: 2.0
+  max: 15.0
+  decimals: 0
+  labels:
+    fr: Durée max av aspi
+    en: Suction Time Max
+    de: Maximale Saugzeit
+  short_fr: t aspi max
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].turbine_takt_ra_vacuum"
+  group: feed
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 0.001
+  max: 60.0
+  decimals: 0
+  labels:
+    fr: t fonc Moteur RA
+    en: Pulse RA Motor
+    de: Takt RA Motor
+  short_fr: Tempo RA Aspi
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].wiegezelle_fuellmenge"
+  group: level
+  type: number
+  unit: kg
+  min: -30000.0
+  max: 30000.0
+  decimals: 0
+  labels:
+    fr: Poids remplissage
+    en: Refill Capacity
+    de: Füllmenge
+  short_fr: Q remplis
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].wiegezelle_fuellstandserkennung"
+  group: level
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Silo textile
+    2: Capt Capa
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].wiegezelle_fuellstandserkennung_gk"
+  group: level
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Mode
+  options:
+    0: Arrêt
+    1: Silo textile
+    2: Trémie int
+    3: Capt Capa
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].wiegezelle_korrektur_gewebetank"
+  group: level
+  type: number
+  unit: kg
+  min: -6000.0
+  max: 6000.0
+  decimals: 0
+  labels:
+    fr: Valeur correction
+    en: Correction Value
+    de: Korrekturwert
+  short_fr: Correction SiloText
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].wiegezelle_korrektur_zwb"
+  group: level
+  type: number
+  unit: kg
+  min: -50.0
+  max: 50.0
+  decimals: 0
+  labels:
+    fr: Valeur correction
+    en: Correction Value
+    de: Korrekturwert
+  short_fr: Correction trémie
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].wiegezelle_schwellwert"
+  group: level
+  type: number
+  unit: kg
+  min: 0.0
+  max: 4000.0
+  decimals: 0
+  labels:
+    fr: Limite alerte granulés
+    en: Limit Value
+    de: Schwellwert
+  short_fr: Seuil
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].asche_aschedauer"
+  group: ash
+  type: number
+  unit: min
+  divisor: 60000
+  min: 1.0
+  max: 100.0
+  decimals: 0
+  labels:
+    fr: Durée extraction
+    en: Delivery Duration
+    de: Austragungsdauer
+  short_fr: Durée extr cendres
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].asche_externe_aschebox"
+  group: ash
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Décendrage
+  options:
+    0: Arrêt
+    1: Cendrier
+    2: Cend & Brûl
+    3: Brûleur
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].asche_minimum_laufzeit_asche"
+  group: ash
+  type: number
+  unit: min
+  divisor: 60000
+  min: 1.0
+  max: 720.0
+  decimals: 0
+  labels:
+    fr: Durée fonct mini
+    en: Min Run Time
+    de: Mindestlaufzeit
+  short_fr: Tfonct min décendrage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].asche_nachlaufzeit_aschebox"
+  group: ash
+  type: number
+  unit: h
+  divisor: 3600000
+  min: 1.0
+  max: 15.0
+  decimals: 0
+  labels:
+    fr: Chaudière stop
+    en: Run On Time
+    de: Kessel Nachlaufzeit
+  short_fr: Postfonctionnement
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].rm_minimum_laufzeit_reinigen"
+  group: cleaning
+  type: number
+  unit: h
+  divisor: 3600000
+  min: 1.0
+  max: 30.0
+  decimals: 0
+  labels:
+    fr: Durée fonct mini
+    en: Min Run Time
+    de: Mindestlaufzeit
+  short_fr: t min ramonage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].rm_reinigungsdauer"
+  group: cleaning
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 1.0
+  max: 600.0
+  decimals: 0
+  labels:
+    fr: Durée fonct mini
+    en: Cleaning Time
+    de: Reinigungszeit
+  short_fr: t ramonage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].rm_reinigungszeit1_befuellung"
+  group: cleaning
+  type: time
+  decimals: 1
+  labels:
+    fr: Ramonage / Remplissage
+    en: Cleaning / Filling
+    de: Reinigung / Befüllung
+  short_fr: H Ramonage/Remplissage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].rm_reinigungszeit1_befuellung_cmp"
+  group: cleaning
+  type: number
+  unit: h
+  min: 1.0
+  max: 24.0
+  decimals: 1
+  labels:
+    fr: Ramonage / Remplissage
+    en: Cleaning / Filling
+    de: Reinigung / Befüllung
+  short_fr: Ramonage / Remplissage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].rm_reinigungszeit2"
+  group: cleaning
+  type: time
+  decimals: 1
+  labels:
+    fr: Ramonage 2
+    en: Cleaning 2
+    de: Reinigung 2
+  short_fr: Ramonage H 2
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].rm_reinigungszeit2_cmp"
+  group: cleaning
+  type: number
+  unit: h
+  min: -1.0
+  max: 24.0
+  decimals: 1
+  labels:
+    fr: Ramonage 2
+    en: Cleaning 2
+    de: Reinigung 2
+  short_fr: t ramonage 2
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].uw_anforderungsabhaengig"
+  group: pump
+  type: enum
+  labels:
+    fr: Si demande brûleur
+    en: Depends on Require
+    de: Anforderungsabhängig
+  short_fr: Selon ordre
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].uw_ausschalthysterese"
+  group: pump
+  type: number
+  unit: K
+  divisor: 10
+  min: 1.0
+  max: 20.0
+  decimals: 0
+  labels:
+    fr: Hystérésis coupure
+    en: Switch Off Hyst
+    de: Ausschalthysterese
+  short_fr: Hystérésis coupure
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].uw_drehzahlregelung"
+  group: pump
+  type: enum
+  labels:
+    fr: Régulation de vitesse
+    en: Pump – Speed Controller
+    de: Pumpe – Drehzahlregelung
+  short_fr: Pompe modulation
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].uw_freigabetemperatur"
+  group: pump
+  type: number
+  unit: °C
+  divisor: 10
+  min: 2.5
+  max: 90.0
+  decimals: 0
+  labels:
+    fr: T limite
+    en: On Temp
+    de: Freigabetemperatur
+  short_fr: T limite pompe
+  level: expert
+  description: T chaudière à partir de laquelle la pompe chaudière démarre.
+  writable: true
+- name: "CAPPL:FA[0].uw_nachlaufzeit"
+  group: pump
+  type: number
+  unit: min
+  divisor: 60000
+  min: 1.0
+  max: 50.0
+  decimals: 0
+  labels:
+    fr: Postfonctionnement
+    en: Run On Time
+    de: Nachlaufzeit
+  short_fr: PostFonct Pompe
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].uw_regelbereich"
+  group: pump
+  type: number
+  unit: K
+  divisor: 10
+  min: 2.0
+  max: 15.0
+  decimals: 0
+  labels:
+    fr: Plage de réglage
+    en: Control Range
+    de: Regelbereich
+  short_fr: Plage cor
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].ma_minimum_laufzeit_waschen"
+  group: wash
+  type: number
+  unit: h
+  divisor: 3600000
+  min: 1.0
+  max: 30.0
+  decimals: 0
+  labels:
+    fr: Durée fonct mini
+    en: Min Run Time
+    de: Mindestlaufzeit
+  short_fr: T min homogén
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].ma_modus_waschen"
+  group: wash
+  type: enum
+  labels:
+    fr: Mode
+    en: Mode
+    de: Modus
+  short_fr: Mode rinçage
+  options:
+    0: Arrêt
+    1: Marche
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].ma_waschdauer"
+  group: wash
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 0.0
+  max: 180.0
+  decimals: 0
+  labels:
+    fr: Durée rinçage
+    en: Washing Time
+    de: Waschdauer
+  short_fr: T rinçage
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frischwasser_nachstellzeit"
+  group: freshwater
+  type: number
+  unit: sec
+  divisor: 1000
+  min: 0.1
+  max: 3000.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Coef intégral
+    en: PID Controller – Integration Time
+    de: PID Regler – Zeit Integralanteil
+  short_fr: Coef intégr
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frischwasser_soll_temp"
+  group: freshwater
+  type: number
+  unit: °C
+  divisor: 10
+  min: 30.0
+  max: 55.0
+  decimals: 0
+  labels:
+    fr: Consigne
+    en: Set Value
+    de: Sollwert
+  short_fr: Cons ECS inst
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frischwasser_verstaerkung"
+  group: freshwater
+  type: number
+  unit: '%'
+  min: 0.0
+  max: 500.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Gain
+    en: PID Controller – Gain
+    de: PID Regler – Verstärkung
+  short_fr: Gain ECS Instant
+  level: expert
+  writable: true
+- name: "CAPPL:FA[0].frischwasser_vorhaltezeit"
+  group: freshwater
+  type: number
+  unit: cs
+  divisor: 100
+  min: 1.0
+  max: 3200.0
+  decimals: 0
+  labels:
+    fr: Correcteur PID – Coef dérivé
+    en: PID Controller – Diff Time
+    de: PID Regler – Zeit Diff Anteil
+  short_fr: Coef dériv
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.L_fernwartung_sende_testmail"
+  group: general
+  type: enum
+  labels:
+    fr: Envoyer e-mail test
+    en: Test E-Mail
+    de: Sende Test E-Mail
+  options:
+    0: Non
+    1: Oui
+  level: expert
+  writable: false
+  snapshot: false
+- name: "CAPPL:LOCAL.L_fernwartung_uhrzeit_neu"
+  group: general
+  type: datetime
+  labels:
+    fr: Date / Heure
+    en: Date / Time
+    de: Datum/Uhrzeit
+  level: expert
+  writable: false
+  snapshot: false
+- name: "CAPPL:LOCAL.fernwartung_anlagenbezeichung"
+  group: general
+  type: text
+  labels:
+    fr: Info Email supp
+    en: Mail Info
+    de: Mail Zusatzinfo
+  short_fr: Désignation instal
+  level: expert
+  writable: false
+- name: "CAPPL:LOCAL.fernwartung_mail_benutzer"
+  group: general
+  type: text
+  labels:
+    fr: Email utilisateur
+    en: Mail User
+    de: Mail Benutzer
+  short_fr: Email user
+  level: expert
+  writable: false
+- name: "CAPPL:LOCAL.fernwartung_mail_empfaenger[0]"
+  group: general
+  type: text
+  labels:
+    fr: Email destinataire
+    en: Mail Recipient 1
+    de: Mail Empfänger 1
+  short_fr: Mail 1
+  level: expert
+  writable: false
+- name: "CAPPL:LOCAL.fernwartung_mail_passwort"
+  group: general
+  type: password
+  labels:
+    fr: Email code
+    en: Mail Password
+    de: Mail Passwort
+  short_fr: Email code
+  level: expert
+  writable: true
+- name: "CAPPL:LOCAL.fernwartung_mail_postausgangsserver"
+  group: general
+  type: text
+  labels:
+    fr: Serveur sortant
+    en: Outbox
+    de: Postausgang
+  short_fr: Serveur sortant
+  level: expert
+  writable: false

@@ -1,0 +1,14 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../app/Charts/**/*';
+@source '../../../../resources/views/**/*';
+
+/* Okovision */
+.oko-kpi-value {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Les graphiques (canvas) ne doivent pas empêcher les grilles de rétrécir */
+.oko-echart, .oko-echart > div { min-width: 0; max-width: 100%; }
+.fi-section { min-width: 0; }
