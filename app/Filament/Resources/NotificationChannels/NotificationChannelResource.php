@@ -30,6 +30,9 @@ class NotificationChannelResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Alertes';
 
+    /** Libellés en français : pas de majuscule à chaque mot */
+    protected static bool $hasTitleCaseModelLabel = false;
+
     protected static ?string $modelLabel = 'canal de notification';
 
     protected static ?string $pluralModelLabel = 'Canaux de notification';
@@ -62,6 +65,8 @@ class NotificationChannelResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('Aucun canal de notification')
+            ->emptyStateDescription('Ajoutez un canal (e-mail, Slack, Telegram ou webhook), puis associez-le aux règles d\'alerte.')
             ->columns([
                 TextColumn::make('name')->label('Nom'),
                 TextColumn::make('type')->label('Type')->badge(),

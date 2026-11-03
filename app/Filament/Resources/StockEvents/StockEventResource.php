@@ -31,6 +31,9 @@ class StockEventResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Silo & entretien';
 
+    /** Libellés en français : pas de majuscule à chaque mot */
+    protected static bool $hasTitleCaseModelLabel = false;
+
     protected static ?string $modelLabel = 'événement';
 
     protected static ?string $pluralModelLabel = 'Livraisons & entretien';
@@ -59,6 +62,8 @@ class StockEventResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('Aucun événement')
+            ->emptyStateDescription('Enregistrez une livraison, un vidage du cendrier ou un entretien.')
             ->defaultSort('occurred_on', 'desc')
             ->columns([
                 TextColumn::make('occurred_on')->label('Date')->date('d/m/Y')->sortable(),

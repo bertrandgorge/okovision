@@ -22,6 +22,9 @@ class AlertEventResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Alertes';
 
+    /** Libellés en français : pas de majuscule à chaque mot */
+    protected static bool $hasTitleCaseModelLabel = false;
+
     protected static ?string $modelLabel = 'alerte';
 
     protected static ?string $pluralModelLabel = 'Historique des alertes';
@@ -50,6 +53,8 @@ class AlertEventResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('Aucune alerte')
+            ->emptyStateDescription('Les alertes déclenchées apparaîtront ici.')
             ->defaultSort('triggered_at', 'desc')
             ->columns([
                 TextColumn::make('triggered_at')->label('Déclenchée')->dateTime('d/m/Y H:i')->sortable(),

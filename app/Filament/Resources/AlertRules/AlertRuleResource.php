@@ -32,6 +32,9 @@ class AlertRuleResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Alertes';
 
+    /** Libellés en français : pas de majuscule à chaque mot */
+    protected static bool $hasTitleCaseModelLabel = false;
+
     protected static ?string $modelLabel = 'règle d\'alerte';
 
     protected static ?string $pluralModelLabel = 'Règles d\'alerte';
@@ -87,6 +90,8 @@ class AlertRuleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('Aucune règle d\'alerte')
+            ->emptyStateDescription('Créez une règle ou lancez « php artisan db:seed » pour les règles par défaut.')
             ->columns([
                 TextColumn::make('name')->label('Nom')->searchable(),
                 TextColumn::make('type')->label('Événement')->badge(),
