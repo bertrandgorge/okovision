@@ -39,7 +39,7 @@ enum AlertType: string implements HasDescription, HasLabel
         return match ($this) {
             self::BoilerFault => "L'état de la chaudière indique un défaut (cendres, granulés, défaut général).",
             self::BoilerUnreachable => "L'API de la chaudière ne répond plus.",
-            self::NoData => 'Aucune mesure reçue depuis N minutes.',
+            self::NoData => 'Aucune mesure reçue depuis N minutes. La chaudière n\'écrit son fichier que toutes les 2 h environ : garder un seuil d\'au moins 180 min.',
             self::SiloLow => 'Stock estimé sous un seuil (kg) ou épuisement prévu dans moins de N jours.',
             self::AshFull => 'Granulés brûlés depuis le dernier vidage au-delà de N % de la capacité du cendrier.',
             self::RoomTempLow => 'Température ambiante sous le seuil.',

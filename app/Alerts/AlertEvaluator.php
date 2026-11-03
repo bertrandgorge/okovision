@@ -150,7 +150,9 @@ class AlertEvaluator
         $age = $last ? (int) now()->diffInMinutes($last, true) : null;
 
         return $age === null || $age > $minutes
-            ? new AlertResult(true, 'Plus de données de la chaudière', $last ? "Dernière mesure reçue le {$last} (il y a {$age} min)." : 'Aucune mesure en base.', ['last' => $last])
+            ? new AlertResult(true, 'Plus de données de la chaudière', $last
+                ? "Dernière mesure reçue le {$last} (il y a {$age} min, seuil {$minutes} min). La chaudière écrit son fichier toutes les 2 h environ : au-delà, vérifiez la récupération (php artisan okovision:fetch)."
+                : 'Aucune mesure en base.', ['last' => $last])
             : AlertResult::ok(['last' => $last]);
     }
 

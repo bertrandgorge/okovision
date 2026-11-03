@@ -64,7 +64,8 @@ return [
         'silo_low_kg' => 500,
         'silo_low_days' => 21,
         'ash_full_pct' => 85,
-        'no_data_minutes' => 60,
+        // La chaudière n'écrit son fichier CSV que toutes les ~2 h (+ 30 min entre deux récupérations)
+        'no_data_minutes' => 180,
         'room_temp_low' => 17,
         'cycles_per_day_high' => 30,
     ],
