@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installer Okovision – guide pas à pas</title>
+<meta name="description" content="Installer Okovision : réseau de la chaudière Okofen, redirection de port (NAT) sur la box, hébergement PHP/MySQL (O2Switch), tâche cron, configuration et import de l'historique.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="assets/favicon.svg" alt="" width="28" height="28">Okovision</a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="./">Présentation</a>
+      <a href="reglage.html">Régler sa chaudière</a>
+      <a href="installation.html" aria-current="page">Installation</a>
+      <a href="https://github.com/bertrandgorge/okovision">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-hero">
+    <p class="eyebrow">Guide d'installation</p>
+    <h1>Installer Okovision</h1>
+    <p class="lead">Okovision est une application web PHP qui interroge la chaudière à intervalles réguliers.
+      Elle peut tourner chez vous (NAS, Raspberry Pi, mini-PC) ou chez un hébergeur. Dans ce cas, la chaudière doit être joignable depuis Internet, par une redirection de port sur votre box.</p>
+  </div>
+
+  <div class="doc">
+    <nav class="toc" aria-label="Sommaire">
+      <p>Sommaire</p>
+      <ol>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#chaudiere">1. Réseau de la chaudière</a></li>
+        <li><a href="#nat">2. Redirection de port (NAT)</a></li>
+        <li><a href="#hebergement">3. Hébergement</a></li>
+        <li><a href="#cron">4. Tâche planifiée</a></li>
+        <li><a href="#configuration">5. Configuration</a></li>
+        <li><a href="#import">6. Historique v1</a></li>
+        <li><a href="#local">Installation locale</a></li>
+        <li><a href="#maj">Mises à jour</a></li>
+        <li><a href="#depannage">Dépannage</a></li>
+      </ol>
+    </nav>
+
+    <article>
+      <h2 id="architecture">Architecture</h2>
+      <figure class="diagram">
+        <svg viewBox="0 0 900 230" role="img" aria-labelledby="arch-title">
+          <title id="arch-title">Le serveur Okovision interroge la chaudière à travers la box, qui redirige un port externe vers l'adresse locale de la chaudière</title>
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+          <rect class="d-box" x="10" y="40" width="190" height="110" rx="12"/>
+          <text class="d-text" x="105" y="75" text-anchor="middle">Chaudière Okofen</text>
+          <text class="d-sub" x="105" y="98" text-anchor="middle">Pelletronic Touch</text>
+          <text class="d-sub" x="105" y="118" text-anchor="middle">192.168.1.41 : 80</text>
+          <text class="d-sub" x="105" y="136" text-anchor="middle">IP fixe sur le LAN</text>
+
+          <rect class="d-accent" x="270" y="40" width="190" height="110" rx="12"/>
+          <text class="d-text" x="365" y="75" text-anchor="middle">Box Internet</text>
+          <text class="d-sub" x="365" y="98" text-anchor="middle">NAT : port 8041 (TCP)</text>
+          <text class="d-sub" x="365" y="118" text-anchor="middle">→ 192.168.1.41 : 80</text>
+          <text class="d-sub" x="365" y="136" text-anchor="middle">maison.ddns.net</text>
+
+          <rect class="d-box" x="530" y="40" width="190" height="110" rx="12"/>
+          <text class="d-text" x="625" y="75" text-anchor="middle">Serveur Okovision</text>
+          <text class="d-sub" x="625" y="98" text-anchor="middle">PHP + MySQL</text>
+          <text class="d-sub" x="625" y="118" text-anchor="middle">cron : schedule:run</text>
+          <text class="d-sub" x="625" y="136" text-anchor="middle">IP publique fixe</text>
+
+          <rect class="d-box" x="770" y="55" width="120" height="80" rx="12"/>
+          <text class="d-text" x="830" y="90" text-anchor="middle">Vous</text>
+          <text class="d-sub" x="830" y="112" text-anchor="middle">navigateur</text>
+
+          <line class="d-line" x1="528" y1="85" x2="464" y2="85" stroke-width="2" marker-end="url(#arr)"/>
+          <line class="d-line" x1="268" y1="85" x2="204" y2="85" stroke-width="2" marker-end="url(#arr)"/>
+          <line class="d-line" x1="768" y1="95" x2="724" y2="95" stroke-width="2" marker-end="url(#arr)"/>
+          <text class="d-sub" x="495" y="190" text-anchor="middle">Toutes les 30 min : CSV des mesures</text>
+          <text class="d-sub" x="495" y="208" text-anchor="middle">À la demande : lecture et écriture des réglages (HTTP)</text>
+          <path d="M625 152 v20 H365 v-20" fill="none" class="d-line" stroke-dasharray="4 4"/>
+        </svg>
+        <figcaption>Hébergement distant : c'est le serveur qui contacte la chaudière, jamais l'inverse. La box doit laisser passer cette connexion entrante.</figcaption>
+      </figure>
+      <p>Okovision fait trois choses avec la chaudière :</p>
+      <ul>
+        <li>il télécharge les fichiers CSV <code>/logfiles/pelletronic/touch_AAAAMMJJ.csv</code>, qui contiennent une ligne par minute ;</li>
+        <li>il lit l'état en direct et les réglages par l'interface web du Touch (<code>/index.cgi</code>) ;</li>
+        <li>il écrit les réglages quand vous le demandez, avec contrôle des bornes, relecture et journal.</li>
+      </ul>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Où l'installer</th><th>Avantages</th><th>À prévoir</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Hébergement mutualisé</strong> (O2Switch, etc.)</td><td>Accessible partout, sauvegardé, rien à faire tourner chez soi</td><td>Redirection de port sur la box ; IP publique ou DNS dynamique</td></tr>
+          <tr><td><strong>Chez vous</strong> (NAS, Raspberry Pi, Docker)</td><td>Pas de port ouvert vers la chaudière, données à la maison</td><td>Une machine allumée en permanence ; accès extérieur par VPN si besoin</td></tr>
+        </tbody>
+      </table></div>
+
+      <h2 id="chaudiere">1. Préparer la chaudière</h2>
+      <ol class="steps">
+        <li><strong>Raccordez le Pelletronic Touch au réseau</strong> par un câble Ethernet relié à la box ou à un switch.</li>
+        <li><strong>Donnez-lui une adresse IP fixe</strong>, sinon la redirection de port cessera de fonctionner le jour où l'adresse change.
+          Deux méthodes : une IP statique dans le menu réseau du Touch (IP-Config), ou un <em>bail DHCP statique</em> réservé sur la box pour l'adresse MAC de la chaudière.
+          Choisissez une adresse hors de la plage DHCP de la box, par exemple <code>192.168.1.41</code>.</li>
+        <li><strong>Vérifiez l'accès en local</strong> : depuis un ordinateur de la maison, ouvrez <code>http://192.168.1.41/</code>.
+          La page de connexion du Touch s'affiche (identifiant d'usine <code>oekofen</code> / <code>oekofen</code>).
+          Le fichier du jour doit aussi être accessible, par exemple <code>http://192.168.1.41/logfiles/pelletronic/touch_20261104.csv</code>.</li>
+        <li><strong>Changez le mot de passe par défaut</strong> avant d'exposer la chaudière sur Internet.</li>
+      </ol>
+
+      <h2 id="nat">2. Redirection de port sur la box (NAT)</h2>
+      <p>Votre box partage une seule adresse IP publique entre tous les appareils de la maison. Par défaut, elle bloque les connexions qui arrivent de l'extérieur.
+        La redirection de port (NAT/PAT) lui indique d'envoyer les connexions reçues sur un port donné vers un appareil précis du réseau local.</p>
+
+      <h3>Règle à créer</h3>
+      <div class="table-wrap"><table>
+        <tbody>
+          <tr><th>Protocole</th><td>TCP</td></tr>
+          <tr><th>Port externe</th><td>un port non standard, par exemple <code>8041</code> (évitez 80, très scanné)</td></tr>
+          <tr><th>Appareil / IP de destination</th><td>l'IP fixe de la chaudière, par exemple <code>192.168.1.41</code></td></tr>
+          <tr><th>Port interne</th><td><code>80</code></td></tr>
+          <tr><th>IP source autorisée</th><td>l'IP publique du serveur Okovision, si la box permet ce filtre</td></tr>
+        </tbody>
+      </table></div>
+      <p>L'URL à saisir ensuite dans Okovision sera <code>http://&lt;votre-ip-publique-ou-nom&gt;:8041</code>.</p>
+
+      <h3>Selon votre box</h3>
+      <ul>
+        <li><strong>Freebox</strong> : Freebox OS (<code>mafreebox.freebox.fr</code>) › Paramètres de la Freebox › Mode avancé › Gestion des ports. Fixez d'abord l'adresse de la chaudière dans l'onglet DHCP (bail statique).</li>
+        <li><strong>Livebox (Orange)</strong> : interface <code>192.168.1.1</code> › Réseau › NAT/PAT, puis l'onglet DHCP pour l'adresse fixe.</li>
+        <li><strong>Bbox, box SFR</strong> et autres : cherchez « NAT », « Redirection de ports », « Port forwarding » ou « Serveurs virtuels » dans l'interface d'administration.</li>
+      </ul>
+      <p>Les menus changent selon le modèle et la version du logiciel de la box. Consultez l'aide de votre opérateur si vous ne les trouvez pas.</p>
+
+      <h3>Adresse publique et nom de domaine</h3>
+      <ul>
+        <li>Pour connaître votre IP publique, ouvrez <code>https://ifconfig.me</code> depuis un appareil de la maison.</li>
+        <li>Si elle change (IP dynamique), utilisez un <strong>DNS dynamique</strong>. Beaucoup de box en proposent un intégré ; sinon, des services comme No-IP ou DuckDNS conviennent.
+          Exemple d'URL : <code>http://maison.ddns.net:8041</code>.</li>
+        <li><strong>IP partagée (CGNAT)</strong> : certains opérateurs, sur la fibre ou la 4G/5G, partagent une IPv4 entre plusieurs clients.
+          Seule une plage de ports est alors disponible, ou aucune. Demandez une IPv4 « full stack » ou dédiée à votre opérateur (souvent gratuit, par exemple chez Free).</li>
+        <li>La redirection de port concerne l'IPv4. En IPv6, il n'y a pas de NAT : il faut ouvrir le pare-feu de la box pour l'adresse IPv6 de la chaudière, si elle en a une.</li>
+      </ul>
+
+      <h3>Tester depuis l'extérieur</h3>
+      <p>Désactivez le Wi-Fi d'un téléphone et ouvrez <code>http://&lt;ip-publique&gt;:8041/</code> en 4G/5G : la page de connexion du Touch doit apparaître.
+        Depuis le réseau de la maison, ce test échoue souvent, car beaucoup de box ne gèrent pas l'accès à leur propre IP publique depuis l'intérieur (« NAT loopback »).
+        Sur l'hébergement, testez depuis le terminal SSH :</p>
+      <pre><code>curl -sI http://maison.ddns.net:8041/ | head -1</code></pre>
+
+      <div class="warn">
+        <p><strong>Sécurité.</strong> L'interface du Touch est en HTTP, sans chiffrement, et donne accès à tous les réglages de la chaudière.</p>
+        <ul>
+          <li>Changez le mot de passe d'usine <code>oekofen</code>.</li>
+          <li>Si votre box le permet, n'autorisez que l'IP du serveur Okovision. Sur l'hébergement, <code>curl -4 ifconfig.me</code> dans le terminal SSH donne l'adresse sortante du serveur.</li>
+          <li>Utilisez un port externe non standard, et ne placez jamais la chaudière en <strong>DMZ</strong>.</li>
+          <li>Si vous ne voulez pas exposer la chaudière, installez Okovision chez vous et accédez-y par un VPN. Beaucoup de box proposent un serveur WireGuard ou OpenVPN.</li>
+        </ul>
+      </div>
+
+      <h2 id="hebergement">3. Installer l'application sur l'hébergement</h2>
+      <p>Les étapes ci-dessous concernent O2Switch (cPanel) et s'adaptent à tout hébergement PHP avec accès SSH.
+        Les assets (CSS/JS) sont déjà compilés dans le dépôt : Node.js n'est pas nécessaire sur le serveur.</p>
+      <ol class="steps">
+        <li><strong>PHP</strong> : cPanel › Sélectionner une version de PHP › PHP 8.4 ou plus récent, avec les extensions <code>pdo_mysql</code>, <code>intl</code>, <code>zip</code>, <code>gd</code> et <code>bcmath</code>.</li>
+        <li><strong>Base de données</strong> : cPanel › Bases de données MySQL. Créez une base et un utilisateur, puis donnez-lui tous les privilèges sur la base.</li>
+        <li><strong>Code</strong> : depuis le terminal SSH (cPanel › Terminal) :
+<pre><code>cd ~
+git clone https://github.com/bertrandgorge/okovision.git okovision
+cd okovision
+composer install --no-dev --optimize-autoloader
+cp .env.example .env</code></pre></li>
+        <li><strong>Fichier <code>.env</code></strong> : renseignez au minimum
+<pre><code>APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://chaudiere.mondomaine.fr
+DB_CONNECTION=mysql        # ou mariadb
+DB_HOST=localhost
+DB_DATABASE=cpaneluser_okovision
+DB_USERNAME=cpaneluser_okovision
+DB_PASSWORD=…
+MAIL_MAILER=smtp           # pour les alertes par e-mail
+BOILER_URL=http://maison.ddns.net:8041</code></pre></li>
+        <li><strong>Initialisation</strong> :
+<pre><code>php artisan key:generate
+php artisan migrate --force
+php artisan db:seed --force      # règles d'alerte par défaut
+php artisan make:filament-user   # votre compte
+php artisan storage:link</code></pre></li>
+        <li><strong>Domaine</strong> : cPanel › Domaines. Créez un sous-domaine (par exemple <code>chaudiere.mondomaine.fr</code>) dont la racine est
+          <code>okovision/public</code>, puis activez le certificat SSL (AutoSSL / Let's Encrypt).</li>
+      </ol>
+
+      <h2 id="cron">4. Tâche planifiée</h2>
+      <p>Une seule tâche cron suffit (cPanel › Tâches Cron). Laravel enchaîne ensuite la récupération des CSV, l'agrégation, les alertes et les tâches de nuit :</p>
+      <pre><code>*/5 * * * * cd ~/okovision &amp;&amp; php artisan schedule:run &gt;&gt; /dev/null 2&gt;&amp;1</code></pre>
+      <p>Toutes les 5 minutes est recommandé. Un cron toutes les 30 minutes ou toutes les heures fonctionne aussi. Les alertes sont alors décalées d'autant, et le pilotage par blocs n'est pas disponible.
+        Les CSV sont récupérés toutes les 30 minutes ; le bouton « Actualiser » du tableau de bord force une récupération.</p>
+
+      <h2 id="configuration">5. Configurer Okovision</h2>
+      <p>Connectez-vous avec le compte créé, puis ouvrez <em>Administration › Paramètres</em>.</p>
+      <figure class="shot"><img src="assets/img/parametres.jpg" width="1600" height="1000" loading="lazy" alt="Paramètres de connexion à la chaudière dans Okovision"></figure>
+      <ol class="steps">
+        <li><strong>Connexion à la chaudière</strong> : l'URL publique (<code>http://maison.ddns.net:8041</code>), l'identifiant et le nouveau mot de passe. Cliquez sur <em>Tester la connexion</em>.
+          Si les CSV sont relayés par un autre serveur, indiquez leur adresse dans <em>URL des fichiers CSV</em>.</li>
+        <li><strong>Installation</strong> : modèle, modulation minimale, contenance en eau de la chaudière, ballon tampon, ballon d'eau chaude, émetteurs, surface et année de la maison.
+          Ces informations servent aux calculs de puissance, de stockage et aux recommandations. La puissance paramétrée est lue directement sur la chaudière.</li>
+        <li><strong>Granulés</strong> : prix, PCI, capacité du silo. Saisissez ensuite une livraison ou un contrôle de niveau dans <em>Silo &amp; cendrier</em> : c'est le point de départ du stock,
+          et chaque nouvelle saisie recalibre le débit de la vis.</li>
+        <li><strong>Alertes</strong> : créez un canal (e-mail, Slack, Telegram ou webhook) dans <em>Canaux de notification</em>, puis rattachez-le aux règles d'alerte.</li>
+        <li><strong>Rapport pour LLM</strong> (facultatif) : générez un jeton dans les paramètres pour accéder à <code>/diagnostic.md?token=…</code> sans session.</li>
+      </ol>
+      <p>Les mesures apparaissent après le premier passage du cron : les CSV encore présents sur la chaudière sont récupérés.</p>
+
+      <h2 id="import">6. Importer l'historique de la version 1</h2>
+      <p>Si vous utilisiez l'ancien Okovision, importez son dump MySQL dans une seconde base, renseignez <code>LEGACY_DB_*</code> dans <code>.env</code>, puis lancez :</p>
+      <pre><code>php artisan okovision:import-legacy</code></pre>
+      <p>Comptez une vingtaine de minutes pour 12 ans de données. Les mesures, les événements du silo (livraisons, entretien) et les profils de réglages sont repris, puis les cycles et synthèses sont recalculés.
+        Vous pouvez aussi importer des CSV de la chaudière (clé USB) depuis <em>Administration › Données &amp; archives</em>.</p>
+
+      <h2 id="local">Installation locale avec Docker</h2>
+      <p>Pour essayer Okovision ou le faire tourner sur une machine de la maison, sans redirection de port, utilisez <code>BOILER_URL=http://192.168.1.41</code> :</p>
+<pre><code>git clone https://github.com/bertrandgorge/okovision.git &amp;&amp; cd okovision
+cp .env.example .env
+docker compose up -d                          # http://localhost:8080
+docker compose exec -u www-data app composer install
+docker compose exec -u www-data app php artisan key:generate
+docker compose exec -u www-data app php artisan migrate --seed
+docker compose exec -u www-data app php artisan make:filament-user
+docker compose --profile scheduler up -d scheduler   # tâches planifiées</code></pre>
+
+      <h2 id="maj">Mises à jour et sauvegardes</h2>
+      <p>Sur le serveur :</p>
+      <pre><code>cd ~/okovision &amp;&amp; ./deploy.sh</code></pre>
+      <p>Le script fait un <code>git pull</code>, installe les dépendances, passe l'application en maintenance, applique les migrations, puis reconstruit les caches.</p>
+      <p>À sauvegarder, en plus de la base de données : le fichier <code>.env</code> et le dossier <code>storage/app/</code>, qui contient les archives des mesures.</p>
+
+      <h2 id="depannage">Dépannage</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Symptôme</th><th>Piste</th></tr></thead>
+        <tbody>
+          <tr><td>« Chaudière injoignable »</td><td>Testez <code>curl -sI http://&lt;url&gt;:8041/</code> depuis le serveur. Vérifiez l'IP fixe de la chaudière, la règle NAT, le filtre d'IP source, et que l'IP publique n'a pas changé.</td></tr>
+          <tr><td>Fonctionne en local, pas depuis l'extérieur</td><td>IP partagée (CGNAT), port bloqué par l'opérateur, ou test fait depuis la maison (NAT loopback). Testez en 4G.</td></tr>
+          <tr><td>Erreur 500 de la chaudière à la lecture</td><td>Le Touch exige un en-tête <code>Accept-Language</code> et sature au-delà de ~25 variables par requête. Okovision le gère ; vérifiez qu'aucun proxy ne retire les en-têtes.</td></tr>
+          <tr><td>« Plus de données reçues »</td><td>Le cron ne tourne pas, ou la chaudière n'écrit plus ses CSV. Vérifiez la tâche cron et l'URL des CSV.</td></tr>
+          <tr><td>Page blanche après mise à jour</td><td><code>php artisan optimize:clear</code>, puis consultez <code>storage/logs/laravel.log</code>.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Une question, un bug ? Ouvrez une <a href="https://github.com/bertrandgorge/okovision/issues">issue sur GitHub</a>.</p>
+    </article>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Okovision · logiciel libre, sans lien avec ÖkoFEN ni KEBA.</span>
+    <span><a href="./">Présentation</a> · <a href="reglage.html">Régler sa chaudière</a> · <a href="https://github.com/bertrandgorge/okovision">GitHub</a></span>
+  </div>
+</footer>
+</body>
+</html>

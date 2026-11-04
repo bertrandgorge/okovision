@@ -13,6 +13,8 @@ Suivi, analyse et réglage d'une chaudière à granulés **Okofen Pellematic** (
 
 Stack : Laravel 13, PHP 8.5, MySQL/MariaDB, Filament 5, ECharts 6.
 
+Site de présentation, guide de réglage et guide d'installation : https://bertrandgorge.github.io/okovision/ (sources dans `site/`).
+
 - Analyse, choix techniques, déploiement O2Switch : [docs/CONCEPTION.md](docs/CONCEPTION.md)
 - Description des champs de la chaudière : [resources/okofen/catalog.yaml](resources/okofen/catalog.yaml)
 - Ancienne application (pour référence) : `legacy/`

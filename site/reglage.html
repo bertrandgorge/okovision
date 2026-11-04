@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Régler sa chaudière à granulés – Okovision</title>
+<meta name="description" content="Principes de réglage d'une chaudière à granulés Okofen : loi d'eau, sonde d'ambiance, cycles courts, hystérésis, puissance, ballon tampon, eau chaude et légionelles. Avec sources.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="assets/favicon.svg" alt="" width="28" height="28">Okovision</a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="./">Présentation</a>
+      <a href="reglage.html" aria-current="page">Régler sa chaudière</a>
+      <a href="installation.html">Installation</a>
+      <a href="https://github.com/bertrandgorge/okovision">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-hero">
+    <p class="eyebrow">Guide</p>
+    <h1>Les principes de réglage d'une chaudière à granulés</h1>
+    <p class="lead">Une chaudière à granulés est plus efficace et plus propre quand elle brûle longtemps à puissance stable.
+      Ce guide explique les réglages qui comptent : loi d'eau, sonde d'ambiance, cycles du brûleur, eau chaude.
+      Les exemples portent sur le régulateur Okofen Pelletronic Touch, mais les principes valent pour la plupart des chaudières.</p>
+  </div>
+
+  <div class="doc">
+    <nav class="toc" aria-label="Sommaire">
+      <p>Sommaire</p>
+      <ol>
+        <li><a href="#fonctionnement">Fonctionnement du brûleur</a></li>
+        <li><a href="#cycles">Pourquoi éviter les cycles courts</a></li>
+        <li><a href="#loi-d-eau">La loi d'eau</a></li>
+        <li><a href="#methode">Méthode de réglage</a></li>
+        <li><a href="#ambiance">Sonde d'ambiance</a></li>
+        <li><a href="#leviers">Limiter les cycles</a></li>
+        <li><a href="#ecs">Eau chaude et légionelles</a></li>
+        <li><a href="#entretien">Entretien</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ol>
+    </nav>
+
+    <article>
+      <h2 id="fonctionnement">1. Comment fonctionne le brûleur</h2>
+      <p>Le régulateur calcule une <strong>consigne de départ</strong> pour le circuit de chauffage à partir de la température extérieure
+        (la loi d'eau), et en déduit une consigne pour la chaudière. Le brûleur <strong>module</strong> sa puissance, en général
+        entre 30 % et 100 % de sa puissance nominale, en jouant sur le débit de la vis et la vitesse du ventilateur.</p>
+      <p>Quand le besoin de la maison descend sous la <strong>puissance minimale</strong>, la chaudière ne peut plus suivre en continu.
+        L'eau chauffe jusqu'à la <strong>température de coupure</strong>, puis le brûleur s'arrête. Il ne redémarre que lorsque la température
+        retombe sous <em>coupure − hystérésis de redémarrage</em>. Chaque cycle passe par les mêmes phases :</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Phase</th><th>Ce qui se passe</th></tr></thead>
+        <tbody>
+          <tr><td>Allumage</td><td>Allumage électrique si le foyer est froid (résistance), sinon reprise sur les braises.</td></tr>
+          <tr><td>Stabilisation</td><td>Montée en température du foyer. La combustion est incomplète et les émissions sont élevées.</td></tr>
+          <tr><td>Combustion</td><td>Fonctionnement modulé, avec le meilleur rendement.</td></tr>
+          <tr><td>Post-combustion</td><td>Arrêt de la vis, puis ventilation pendant environ 15 minutes pour brûler les restes. Une partie de la chaleur du foyer part alors par la cheminée.</td></tr>
+        </tbody>
+      </table></div>
+      <figure class="shot"><img src="assets/img/journee-combustion.jpg" width="1584" height="674" loading="lazy" alt="Une journée d'hiver avec une vingtaine de cycles courts du brûleur">
+        <figcaption>Une journée d'hiver vue par Okovision : après la relance du matin, le brûleur enchaîne des cycles d'une vingtaine de minutes.</figcaption></figure>
+
+      <h2 id="cycles">2. Pourquoi éviter les cycles courts</h2>
+      <p>Les chaudières sont certifiées en laboratoire, à puissance stable. En conditions réelles, les démarrages et les arrêts répétés
+        dégradent nettement leurs performances :</p>
+      <ul>
+        <li>Sur cinq chaudières à granulés suivies pendant un an dans des maisons autrichiennes, sans ballon tampon, le rendement annuel mesuré
+          était compris entre <strong>65 et 85 %</strong>, contre 90 à 94 % certifiés. L'écart dépend du taux de charge et du nombre d'allumages
+          (Carlon et al., 2015).</li>
+        <li>Sur une chaudière à granulés testée au Brookhaven National Laboratory à 15 % de charge, le rendement passe de
+          <strong>57 % sans stockage à 74 % avec stockage</strong>. Les particules passent de 180 à 64 mg/MJ, car le stockage réduit le nombre de cycles.</li>
+        <li>Les phases d'allumage et d'arrêt concentrent l'essentiel des émissions de monoxyde de carbone et de particules.</li>
+      </ul>
+      <p>Il faut donc chercher des cycles longs et peu nombreux, avec le moins d'allumages à froid possible.
+        Okovision compte les cycles chaque jour et mesure leur durée, ainsi que la part du temps passée en allumage et en post-ventilation.</p>
+
+      <h2 id="loi-d-eau">3. La loi d'eau (courbe de chauffe)</h2>
+      <p>La loi d'eau donne la température de l'eau envoyée dans les radiateurs selon la température extérieure.
+        Plus il fait froid, plus l'eau doit être chaude pour compenser les déperditions. Elle se règle avec deux paramètres :</p>
+      <ul>
+        <li><strong>La pente</strong> (« Courbe de chauffe ») : de combien la température de départ augmente quand la température extérieure baisse de 1 °C.
+          Elle dépend surtout de l'isolation et des émetteurs. Une pente de 1,3 donne +1,3 °C au départ pour −1 °C dehors.</li>
+        <li><strong>Le pied de courbe</strong> : décale toute la courbe vers le haut ou vers le bas, c'est-à-dire la température de départ par temps doux.</li>
+      </ul>
+      <figure class="diagram">
+        <svg viewBox="0 0 600 300" role="img" aria-labelledby="curve-title">
+          <title id="curve-title">Deux lois d'eau : pente 1,3 et pied 32 °C, et pente 1,6 et pied 34 °C, plafonnée à 75 °C</title>
+          <g class="d-grid" stroke-width="1">
+            <line x1="60" y1="20" x2="560" y2="20"/><line x1="60" y1="100" x2="560" y2="100"/><line x1="60" y1="180" x2="560" y2="180"/>
+            <line x1="202.9" y1="20" x2="202.9" y2="260"/><line x1="345.7" y1="20" x2="345.7" y2="260"/><line x1="488.6" y1="20" x2="488.6" y2="260"/>
+          </g>
+          <g class="d-axis" stroke-width="1.5"><line x1="60" y1="260" x2="560" y2="260"/><line x1="60" y1="20" x2="60" y2="260"/></g>
+          <g class="d-sub" text-anchor="middle">
+            <text x="60" y="278">+20</text><text x="202.9" y="278">+10</text><text x="345.7" y="278">0</text><text x="488.6" y="278">−10</text>
+            <text x="310" y="296">Température extérieure (°C)</text>
+          </g>
+          <g class="d-sub" text-anchor="end">
+            <text x="52" y="264">20</text><text x="52" y="184">40</text><text x="52" y="104">60</text><text x="52" y="24">80</text>
+          </g>
+          <text class="d-sub" x="66" y="14">Départ (°C)</text>
+          <polyline class="d-curve2" stroke-width="3" points="60,238 560,56"/>
+          <polyline class="d-curve" stroke-width="3" points="60,236 497,40 560,40"/>
+          <line x1="131.4" y1="204" x2="131.4" y2="260" class="d-line" stroke-dasharray="4 4"/>
+          <circle cx="131.4" cy="212" r="5" fill="var(--blue)"/><circle cx="131.4" cy="204" r="5" fill="var(--accent)"/>
+          <text class="d-sub" x="140" y="236">pied = départ à +15 °C</text>
+          <text class="d-text" x="380" y="168" style="fill:var(--blue)">pente 1,3 · pied 32</text>
+          <text class="d-text" x="100" y="112" style="fill:var(--accent)">pente 1,6 · pied 34</text>
+          <text class="d-sub" x="500" y="34">T départ maxi</text>
+        </svg>
+        <figcaption>Augmenter la pente relève surtout le départ par grand froid ; le pied agit sur toute la courbe, surtout visible par temps doux.</figcaption>
+      </figure>
+
+      <h3>La formule du Pelletronic Touch</h3>
+      <p>La documentation Okofen ne donne pas la formule exacte. Okovision l'a identifiée sur 12 ans de consignes calculées par le régulateur
+        (écart résiduel inférieur à 0,05 °C) :</p>
+      <p class="formula">Départ = Pied + (RT<sub>consigne</sub> − 20) + Pente × (RT<sub>consigne</sub> − 5 − T<sub>ext</sub>) + Influence × (RT<sub>consigne</sub> − RT<sub>mesurée</sub>)</p>
+      <p>Le résultat est ensuite borné entre la T départ mini et la T départ maxi. Il en découle trois règles pratiques :</p>
+      <ul>
+        <li>Le <strong>pied de courbe correspond au départ à +15 °C extérieur</strong>, pour une consigne d'ambiance de 20 °C.</li>
+        <li>Chaque degré de consigne d'ambiance en plus ajoute <strong>(1 + pente) °C</strong> au départ.</li>
+        <li>La consigne chaudière vaut le maximum entre <em>départ + surélévation</em> et la <em>T chaudière mini</em>.</li>
+      </ul>
+      <p>Les températures extérieures utilisées sont moyennées par le régulateur (durée de moyennage réglable, par exemple 60 min), ce qui lisse les variations rapides.</p>
+
+      <h2 id="methode">4. Méthode de réglage</h2>
+      <ol class="steps">
+        <li><strong>Une seule modification par jour</strong>, par petits pas. La maison réagit lentement : il faut au moins 24 h pour juger un changement.</li>
+        <li><strong>Par temps doux (entre +5 et +15 °C), on règle le pied</strong> : pièce trop chaude, −2 à −5 °C ; pièce trop froide, +2 à +5 °C.</li>
+        <li><strong>Par temps froid (sous +5 °C), on règle la pente</strong> : trop chaud, −0,1 à −0,2 ; trop froid, +0,1 à +0,2.</li>
+        <li>Pendant le réglage, réduire l'influence de la sonde d'ambiance pour voir l'effet de la courbe seule.</li>
+        <li>Ouvrir en grand les robinets thermostatiques de la pièce de référence. Ils servent au réglage fin pièce par pièce, pas au réglage principal.</li>
+        <li>Viser la <strong>température de départ la plus basse qui assure le confort</strong> : moins de pertes de distribution, une vanne mélangeuse moins sollicitée, une demande plus régulière.</li>
+      </ol>
+      <p>Un guide de SuisseEnergie estime qu'une courbe bien réglée économise 4 à 6 % d'énergie. Il recommande de régler une première fois par temps froid
+        (un peu en dessous de 0 °C), puis par temps doux (un peu au-dessus de 10 °C).</p>
+      <div class="tip">
+        <p>Dans Okovision, la page <em>Loi d'eau</em> affiche les consignes réellement calculées par la chaudière, colorées selon l'écart d'ambiance.
+          Elle propose une <strong>courbe apprise</strong> (pente et pied) qui reproduit les besoins observés, en tenant compte de la correction par la sonde d'ambiance.</p>
+      </div>
+      <figure class="shot"><img src="assets/img/courbe-apprise.jpg" width="774" height="1058" loading="lazy" alt="Panneau « Courbe apprise » : pente 1,6, pied 33,8 °C et méthode de réglage" style="max-width:420px">
+      </figure>
+
+      <h2 id="ambiance">5. La sonde d'ambiance</h2>
+      <p>Avec une sonde d'ambiance, le paramètre <strong>influence</strong> corrige le départ selon l'écart entre la consigne et la température mesurée.
+        Avec une influence de 3, une pièce à 19 °C pour 20 °C de consigne ajoute 3 °C au départ.</p>
+      <p>La sonde doit seulement <strong>affiner</strong>. Si elle corrige beaucoup en permanence, c'est que la courbe est mal réglée.
+        Sur l'installation d'exemple, la sonde ajoutait en moyenne +4,9 °C au départ par 0 °C extérieur : la pente était trop faible.
+        Une courbe bien réglée laisse un écart proche de zéro.</p>
+      <p>La sonde se place dans une pièce de vie représentative, à l'abri du soleil direct, des appareils qui chauffent et des courants d'air.
+        Les apports gratuits (soleil, cuisson, poêle) faussent sa mesure.</p>
+      <p>Avec des convecteurs à ailettes, peu inertes et dont la puissance dépend fortement de la température de l'eau, les pentes usuelles vont de 1,2 à 1,8.
+        Un plancher chauffant demande une pente beaucoup plus faible.</p>
+
+      <h2 id="leviers">6. Limiter les cycles courts</h2>
+      <p>Du plus simple au plus structurant :</p>
+      <h3>Élargir l'hystérésis de redémarrage</h3>
+      <p>Sans ballon tampon, la seule réserve d'énergie est l'eau de la chaudière. Avec une coupure à 80 °C et une hystérésis de 5 K, le brûleur redémarre dès 75 °C.
+        Avec 12 K, il redémarre à 68 °C : la plage de stockage passe de 5 à 12 K et les redémarrages se raréfient. Il faut rester au-dessus de la
+        <strong>T chaudière mini</strong> (protection contre la condensation dans le foyer) et de la température de libération des pompes, avec une marge.</p>
+      <h3>Réduire la puissance paramétrée</h3>
+      <p>Une chaudière surdimensionnée descend moins bas en modulation. Exemple réel : 21 kW installés, modulation mini ≈ 6,3 kW,
+        pour un besoin moyen de 4,2 kW en saison et d'environ 12 kW à −5 °C. Paramétrer 15 kW ramène le minimum vers 4,5 kW.
+        La chaudière peut alors brûler en continu une grande partie de la saison. Ce réglage technicien se fait avec l'installateur,
+        en vérifiant la puissance nécessaire par grand froid et pour la relance après un réduit de nuit.</p>
+      <h3>Regrouper l'eau chaude</h3>
+      <p>Une charge d'eau chaude isolée provoque un cycle complet, surtout en été. Une hystérésis ECS plus large (10 K) et une ou deux plages horaires
+        alignées sur les heures de chauffage regroupent les besoins dans un même cycle.</p>
+      <h3>Utiliser l'inertie de la maison</h3>
+      <p>À mi-saison, on peut alterner de longues périodes de chauffe et des pauses, tant que l'ambiance reste dans une bande de confort.
+        Les murs servent alors de stockage. Okovision propose ce pilotage « par blocs » en option expérimentale, désactivée et en simulation par défaut.</p>
+      <h3>Installer un ballon tampon</h3>
+      <p>C'est la solution de fond. Le ballon stocke la chaleur produite à bonne puissance, puis la restitue pendant que la chaudière est à l'arrêt.
+        La règle usuelle est de <strong>25 à 50 L par kW</strong>. En Allemagne, les aides publiques aux chaudières à granulés exigent au moins 30 L par kW.
+        Un ballon de 600 L chargé entre 60 et 80 °C stocke environ 14 kWh. L'investissement est réel (coût, place, pertes à bien isoler) :
+        il se justifie surtout quand la chaudière est nettement surdimensionnée.</p>
+      <figure class="shot"><img src="assets/img/besoin-puissance.jpg" width="774" height="704" loading="lazy" alt="Besoin de la maison par température extérieure, comparé aux puissances de la chaudière" style="max-width:520px">
+        <figcaption>Le besoin moyen (orange) passe sous la puissance minimale (rouge) dès 9 °C extérieur : c'est la zone des cycles courts.</figcaption></figure>
+
+      <h2 id="ecs">7. Eau chaude sanitaire et légionelles</h2>
+      <p>Les légionelles se développent entre 25 et 45 °C environ. Une eau chaude stockée à 40 °C se situe dans cette plage. Les recommandations sanitaires françaises :</p>
+      <ul>
+        <li>Produire l'eau chaude à <strong>55 °C au moins</strong> en sortie de ballon, en permanence.</li>
+        <li>À défaut, monter régulièrement le ballon à 60 °C ou plus : la légionelle est détruite en environ 30 minutes à 60 °C.
+          La fonction anti-légionelles du Touch le fait automatiquement, par exemple une fois par semaine.</li>
+        <li>Limiter l'eau à <strong>50 °C aux points de puisage</strong> des salles de bains (mitigeur thermostatique) pour éviter les brûlures.</li>
+      </ul>
+      <p>Une consigne plus haute stocke aussi plus d'énergie dans le ballon, ce qui espace les charges en été.</p>
+
+      <h2 id="entretien">8. Entretien</h2>
+      <ul>
+        <li><strong>Entretien annuel</strong> par un professionnel : nettoyage, réglage de la combustion, contrôle.</li>
+        <li><strong>Ramonage</strong> du conduit de fumée au moins une fois par an, parfois deux selon le règlement sanitaire départemental. Gardez le certificat.</li>
+        <li><strong>Cendrier</strong> : la fréquence de vidage dépend des granulés brûlés (environ 0,5 % de cendres). Okovision l'estime et prévient avant qu'il soit plein.</li>
+        <li><strong>Granulés</strong> certifiés (ENplus A1 ou DINplus), stockés au sec. Des granulés humides ou poussiéreux encrassent le foyer et perturbent la combustion.</li>
+        <li>Si des turbulateurs ont été retirés de l'échangeur, la température des fumées augmente et le rendement baisse. À revoir avec l'installateur.</li>
+      </ul>
+      <div class="warn">
+        <p>Certains réglages (puissance, températures mini, paramètres de combustion) relèvent du technicien et peuvent avoir des conséquences
+          sur la sécurité, la garantie ou la durée de vie de la chaudière. En cas de doute, demandez l'avis de votre installateur.</p>
+      </div>
+
+      <h2 id="sources">Sources</h2>
+      <h3>Cycles, rendement et stockage</h3>
+      <ul class="sources">
+        <li><span class="src-title">Carlon E. et al., « Efficiency and operational behaviour of small-scale pellet boilers installed in residential buildings »</span>,
+          Applied Energy 155 (2015) 854-865. Notice : <a href="https://fis.fhwn.ac.at/en/publications/efficiency-and-operational-behaviour-of-small-scale-pellet-boiler/">fis.fhwn.ac.at</a>,
+          <a href="https://agris.fao.org/search/en/records/65df6bb76eef00c2cea2c360">AGRIS (FAO)</a>.</li>
+        <li><span class="src-title">Thomas B. (Brookhaven National Laboratory), « Effect of Thermal Storage on the Performance of a Wood Pellet-fired Residential Boiler »</span>, rapport technique, 2017 :
+          <a href="https://www.osti.gov/biblio/1426787">osti.gov/biblio/1426787</a>.</li>
+        <li><span class="src-title">« Effect of Thermal Storage on the Emissions and Efficiency Performance of a Wood Pellet-Fired Residential Boiler »</span>, ACS Omega, 2020 :
+          <a href="https://www.osti.gov/biblio/1668663">osti.gov/biblio/1668663</a> · texte intégral : <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7658944/">PMC7658944</a>.</li>
+        <li><span class="src-title">Heinz A., « Effizienzsteigerung von Pellets-Solar-Systemen » (mesures en fonctionnement cyclique)</span>, Blue Globe Report 2/2010, Klima- und Energiefonds :
+          <a href="https://old.klimafonds.gv.at/wp-content/uploads/sites/16/KLIENBGR22010KB07EZ1F44263EEEffizienzPellets.pdf">PDF</a>.</li>
+        <li><span class="src-title">Haslinger W., « Emissionen von Biomassefeuerungen »</span>, Österreichischer Biomasse-Verband :
+          <a href="https://www.biomasseverband.at/wp-content/uploads/Haslinger_Emissionen_Biomassefeuerungen.pdf">PDF</a>.</li>
+        <li><span class="src-title">ÖkoFEN, conditions des aides allemandes (ballon tampon d'au moins 30 L/kW)</span> :
+          <a href="https://www.oekofen.com/assets/deutschland/DE_2025/oekofen_foerderflyer_ek_din-lang_3-stufe__2025-ansicht.pdf">dépliant 2025 (PDF)</a>.</li>
+      </ul>
+      <h3>Loi d'eau</h3>
+      <ul class="sources">
+        <li><span class="src-title">SuisseEnergie, « Optimiser l'exploitation du chauffage : régler la courbe de chauffe »</span> :
+          <a href="https://pubdb.bfe.admin.ch/fr/publication/download/9982">pubdb.bfe.admin.ch</a>.</li>
+        <li><span class="src-title">Viessmann, « Wie kann die Heizkennlinie optimiert werden? »</span> :
+          <a href="https://community.viessmann.de/viessmann/attachments/viessmann/customers-gas/65161/1/Wie%20kann%20die%20Heizkennlinie%20optimiert%20werden.pdf">PDF</a>.</li>
+        <li><span class="src-title">Formule du Pelletronic Touch identifiée par Okovision</span> : <a href="https://github.com/bertrandgorge/okovision/blob/master/docs/CONCEPTION.md">docs/CONCEPTION.md</a>.</li>
+      </ul>
+      <h3>Retours d'expérience Okofen</h3>
+      <ul class="sources">
+        <li><span class="src-title">Forum Futura-Sciences, « Retours d'expérience chaudières OKOFEN »</span> (plusieurs centaines de pages) :
+          <a href="https://forums.futura-sciences.com/habitat-bioclimatique-isolation-chauffage/568807-retours-dexperience-chaudieres-okofen.html">forums.futura-sciences.com</a>.</li>
+        <li><span class="src-title">energiesparhaus.at, « ÖkoFEN Pelletsheizung schwingt in Teillast – Optimierung möglich? »</span> :
+          <a href="https://www.energiesparhaus.at/forum-oekofen-pelletsheizung-schwingt-in-teillast-optimierung-moeglich/70763_1">energiesparhaus.at</a>.</li>
+      </ul>
+      <h3>Eau chaude sanitaire</h3>
+      <ul class="sources">
+        <li><span class="src-title">ARS Pays de la Loire, prévention du risque lié aux légionelles</span> : <a href="https://www.pays-de-la-loire.ars.sante.fr/media/4049/download">PDF</a>.</li>
+        <li><span class="src-title">ARS Bretagne, légionelles et réseaux d'eau chaude</span> : <a href="https://www.bretagne.ars.sante.fr/media/2132/download">PDF</a>.</li>
+        <li><span class="src-title">Préfecture du Calvados, fiche mémo prévention des légionelles</span> :
+          <a href="https://www.calvados.gouv.fr/contenu/telechargement/23827/175679/file/Fiche%20m%C3%A9mo%20prevention-legionnelles-VF-3.pdf">PDF</a>.</li>
+      </ul>
+      <h3>Chauffage au bois et entretien</h3>
+      <ul class="sources">
+        <li><span class="src-title">ADEME, « Comment bien se chauffer au bois ? »</span> : <a href="https://librairie.ademe.fr/ged/8931/guide-comment-bien-chauffer-bois.pdf">librairie.ademe.fr</a>.</li>
+        <li><span class="src-title">Ministère de la Transition écologique, « Chaudières biomasse – granulés »</span> (fiche RE2020) :
+          <a href="https://rt-re-batiment.developpement-durable.gouv.fr/IMG/pdf/8-chaudieres_biomasse_-_granules.pdf">PDF</a>.</li>
+        <li><span class="src-title">Ministère de la Transition écologique, « Le chauffage au bois, mode d'emploi »</span> :
+          <a href="https://www.notre-environnement.gouv.fr/IMG/pdf/guide-pratique-chauffage-au-bois-mode-emploi.pdf">PDF</a>.</li>
+      </ul>
+      <p style="color:var(--muted);font-size:.9rem">Les mesures citées en exemple proviennent d'une installation réelle suivie par Okovision depuis 2014
+        (maison de 230 m² des années 1970, convecteurs à ailettes, Pellematic 21 kW sans ballon tampon).</p>
+    </article>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Okovision · logiciel libre, sans lien avec ÖkoFEN ni KEBA.</span>
+    <span><a href="./">Présentation</a> · <a href="installation.html">Installation</a> · <a href="https://github.com/bertrandgorge/okovision">GitHub</a></span>
+  </div>
+</footer>
+</body>
+</html>

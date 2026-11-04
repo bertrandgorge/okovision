@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Okovision – suivi et réglage des chaudières Okofen</title>
+<meta name="description" content="Okovision : application libre de suivi, d'analyse et de réglage des chaudières à granulés Okofen Pellematic (régulateur Pelletronic Touch / KEBA).">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="assets/favicon.svg" alt="" width="28" height="28">Okovision</a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="./" aria-current="page">Présentation</a>
+      <a href="reglage.html">Régler sa chaudière</a>
+      <a href="installation.html">Installation</a>
+      <a href="https://github.com/bertrandgorge/okovision">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Logiciel libre · Okofen Pellematic · Pelletronic Touch</p>
+      <h1>Comprendre et mieux régler sa chaudière à granulés</h1>
+      <p class="lead">Okovision récupère les mesures de votre chaudière Okofen minute par minute, les analyse sur plusieurs années
+        et vous aide à régler la loi d'eau, à limiter les cycles courts et à suivre votre stock de granulés.</p>
+      <div class="actions">
+        <a class="btn primary" href="installation.html">Installer Okovision</a>
+        <a class="btn" href="reglage.html">Les principes de réglage</a>
+      </div>
+      <figure class="shot">
+        <img src="assets/img/dashboard.jpg" width="1600" height="1000" alt="Tableau de bord d'Okovision : températures, granulés du jour, silo, cendrier et courbes de la journée">
+        <figcaption>Le tableau de bord : état en direct, indicateurs du jour, niveau du silo et du cendrier, courbes de la journée.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap prose">
+      <h2>Pourquoi Okovision ?</h2>
+      <p>L'écran de la chaudière donne l'état du moment, pas l'historique. On ne voit donc pas que le brûleur s'arrête et redémarre
+        toutes les 20 minutes, que la sonde d'ambiance compense une loi d'eau trop basse, ni combien de granulés part dans l'eau chaude.</p>
+      <p>Okovision lit les fichiers CSV que le régulateur écrit chaque minute, ainsi que ses réglages par son interface web.
+        Il stocke ces données dans une base et les présente sous forme de graphiques, de synthèses et de recommandations chiffrées.
+        Les réglages peuvent ensuite être modifiés depuis l'application, avec vérification des bornes, relecture et journal.</p>
+      <p>Exemple réel : une installation suivie depuis 2014. Okovision y a mesuré ceci.</p>
+    </div>
+    <div class="wrap">
+      <div class="stats">
+        <div class="stat"><b>13 cycles/jour</b><span>en hiver, combustion médiane de 19 min</span></div>
+        <div class="stat"><b>76 %</b><span>des cycles durent moins de 30 min</span></div>
+        <div class="stat"><b>4,2 kW</b><span>de besoin moyen pour une chaudière de 21 kW</span></div>
+        <div class="stat"><b>81 %</b><span>des jours de chauffe sous la puissance minimale</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="wrap">
+      <h2>Fonctionnalités</h2>
+
+      <div class="feature">
+        <div class="text">
+          <h3>La journée minute par minute</h3>
+          <p>Températures (chaudière, départ, ECS, extérieur, ambiance), frise des états du brûleur et des pompes, combustion
+            (flamme, ventilateurs, vis). Les trois graphiques sont synchronisés et zoomables.</p>
+          <ul>
+            <li>Chaque cycle brûleur est détecté et coloré, en rouge pour un allumage à froid.</li>
+            <li>Synthèse du jour : granulés (dont eau chaude), cycles, temps de combustion, DJU.</li>
+            <li>Les mois archivés restent consultables : l'archive est relue à la volée.</li>
+          </ul>
+        </div>
+        <div>
+          <figure class="shot"><img src="assets/img/journee-temperatures.jpg" width="1584" height="764" loading="lazy" alt="Courbes de températures d'une journée d'hiver avec les cycles du brûleur"></figure>
+          <figure class="shot" style="margin-top:16px"><img src="assets/img/journee-combustion.jpg" width="1584" height="674" loading="lazy" alt="Graphique de combustion : température de flamme, ventilateurs et vis"></figure>
+        </div>
+      </div>
+
+      <div class="feature reverse">
+        <div class="text">
+          <h3>Éditeur visuel de la loi d'eau</h3>
+          <p>La courbe de chauffe se règle en faisant glisser deux poignées (à −5 °C et +15 °C extérieur) ou avec des curseurs.
+            Okovision utilise la formule exacte du régulateur, identifiée sur 12 ans de consignes.</p>
+          <ul>
+            <li>Nuage des consignes réellement calculées par la chaudière, coloré selon l'écart d'ambiance (bleu : trop froid, rouge : trop chaud).</li>
+            <li><strong>Courbe apprise</strong> : la pente et le pied qui reproduisent les consignes réellement nécessaires.</li>
+            <li>Application directe à la chaudière.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img src="assets/img/loi-d-eau.jpg" width="1600" height="1000" loading="lazy" alt="Éditeur de la loi d'eau avec poignées et nuage de consignes"></figure>
+      </div>
+
+      <div class="feature">
+        <div class="text">
+          <h3>Diagnostic des cycles courts et recommandations</h3>
+          <p>La page <em>Optimisation</em> compare le besoin de la maison à la puissance minimale de la chaudière et chiffre
+            les cycles : nombre par jour, durée de combustion, temps perdu en allumage et post-ventilation.</p>
+          <ul>
+            <li>Recommandations classées, applicables en un clic : hystérésis, puissance, eau chaude, loi d'eau.</li>
+            <li>Pilotage expérimental « chauffage par blocs » qui utilise l'inertie de la maison (désactivé et en simulation par défaut).</li>
+          </ul>
+        </div>
+        <figure class="shot"><img src="assets/img/recommandations.jpg" width="1584" height="968" loading="lazy" alt="Recommandations : réduire la puissance paramétrée, installer un ballon tampon"></figure>
+      </div>
+
+      <div class="two-shots">
+        <figure class="shot"><img src="assets/img/besoin-puissance.jpg" width="774" height="704" loading="lazy" alt="Besoin de la maison comparé aux puissances minimale et nominale de la chaudière"><figcaption>Besoin de la maison et puissances de la chaudière : sous la ligne rouge, la chaudière ne peut que fonctionner par cycles.</figcaption></figure>
+        <figure class="shot"><img src="assets/img/signature.jpg" width="774" height="956" loading="lazy" alt="Signature énergétique : consommation par jour en fonction de la température extérieure"><figcaption>Signature énergétique par saison : déperditions de la maison et température de non-chauffage.</figcaption></figure>
+      </div>
+
+      <div class="feature reverse">
+        <div class="text">
+          <h3>Historique et comparaison des saisons</h3>
+          <p>Consommation chauffage et eau chaude, cycles et allumages à froid, distribution des durées de cycle, et comparaison
+            des saisons en kg, en euros, en DJU et en kg/DJU. Ce dernier indicateur permet de comparer une année à l'autre quelle que soit la météo.</p>
+        </div>
+        <figure class="shot"><img src="assets/img/saisons.jpg" width="1584" height="1250" loading="lazy" alt="Comparaison mensuelle des saisons et tableau des consommations"></figure>
+      </div>
+
+      <div class="feature">
+        <div class="text">
+          <h3>Silo de granulés et cendrier</h3>
+          <p>Le stock est calculé à partir du temps de marche de la vis multiplié par son débit. Ce débit est <strong>recalibré automatiquement</strong>
+            à chaque livraison ou contrôle de niveau. La date d'épuisement est projetée avec la signature énergétique et les températures normales de la saison.</p>
+          <ul>
+            <li>Saisie rapide : livraison, contrôle de niveau, cendrier vidé, entretien, ramonage.</li>
+            <li>Remplissage du cendrier estimé d'après les granulés brûlés depuis le dernier vidage.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img src="assets/img/silo.jpg" width="1600" height="1000" loading="lazy" alt="Jauges du silo et du cendrier"></figure>
+      </div>
+
+      <div class="feature reverse">
+        <div class="text">
+          <h3>Tous les réglages de la chaudière</h3>
+          <p>Les 223 réglages connus sont décrits dans un catalogue : libellés FR/EN/DE, unités, bornes, aide, nom à l'écran du Touch.
+            Ils sont classés en <em>essentiels</em> et <em>avancés</em>, avec une recherche.</p>
+          <ul>
+            <li>Différences affichées avant l'écriture, valeur relue après, journal de chaque modification.</li>
+            <li>Profils de réglages, et relevé automatique chaque nuit pour garder l'historique des changements.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img src="assets/img/reglages.jpg" width="1600" height="1000" loading="lazy" alt="Liste des réglages de la chaudière avec plages et descriptions"></figure>
+      </div>
+
+      <div class="grid-cards">
+        <div class="card"><h4>Alertes</h4><p>Défaut chaudière, chaudière injoignable, plus de données, silo bas, cendrier plein, ambiance ou eau chaude trop froide, trop de cycles, entretien, ramonage.</p></div>
+        <div class="card"><h4>Notifications</h4><p>Par e-mail, Slack, Telegram ou webhook signé HMAC.</p></div>
+        <div class="card"><h4>Rapport pour LLM</h4><p><code>/diagnostic.md</code> produit un document Markdown complet (installation, réglages et plages, cycles, signature, mesures) à soumettre à un assistant IA pour obtenir un diagnostic.</p></div>
+        <div class="card"><h4>Archivage</h4><p>Au-delà de 24 mois, les mesures minute sont archivées en CSV compressé (≈ 0,5 Mo/mois). Les synthèses restent en base.</p></div>
+        <div class="card"><h4>Import de l'ancien Okovision</h4><p>L'historique de la version 1 (base MySQL) est importé en une commande.</p></div>
+        <div class="card"><h4>Hébergement simple</h4><p>PHP et MySQL suffisent : un hébergement mutualisé (O2Switch par exemple), un NAS ou un Raspberry Pi.</p></div>
+      </div>
+
+      <figure class="shot" style="margin-top:32px"><img src="assets/img/alertes.jpg" width="1600" height="1000" loading="lazy" alt="Liste des règles d'alerte"><figcaption>Les règles d'alerte livrées par défaut.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap prose">
+      <h2>Matériel compatible</h2>
+      <p>Okovision est développé et testé avec une <strong>Okofen Pellematic</strong> équipée du régulateur
+        <strong>Pelletronic Touch V02.00j</strong> (automate KEBA). Il utilise l'interface web locale du Touch (celle de l'accès à distance)
+        et les fichiers CSV qu'elle met à disposition dans <code>/logfiles/pelletronic/</code>.
+        Les autres versions du Touch qui exposent ces fichiers devraient fonctionner. Les retours sont les bienvenus sur GitHub.</p>
+
+      <h2>Technique</h2>
+      <p>Laravel 13, PHP 8.4+, MySQL/MariaDB, interface Filament 5, graphiques ECharts. Les assets sont compilés et versionnés :
+        le serveur n'a besoin que de PHP, de Composer et de Git. Une seule tâche cron suffit.</p>
+
+      <h2>Origine</h2>
+      <p>Okovision est né d'un projet de <a href="https://github.com/stawen/okovision">Stawen Dronek</a>, qui n'est plus maintenu.
+        Cette version 2, réécrite entièrement par <a href="https://github.com/bertrandgorge">Bertrand Gorge</a>, est publiée sur GitHub.
+        Le code d'origine est conservé dans le dépôt, avec ses mentions d'auteur, et ses données s'importent dans la nouvelle version.</p>
+      <div class="actions" style="margin-top:28px">
+        <a class="btn primary" href="installation.html">Guide d'installation</a>
+        <a class="btn" href="https://github.com/bertrandgorge/okovision">Code source sur GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Okovision · logiciel libre, sans lien avec ÖkoFEN ni KEBA.</span>
+    <span><a href="reglage.html">Régler sa chaudière</a> · <a href="installation.html">Installation</a> · <a href="https://github.com/bertrandgorge/okovision">GitHub</a></span>
+  </div>
+</footer>
+</body>
+</html>
