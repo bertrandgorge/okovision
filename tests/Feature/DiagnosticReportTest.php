@@ -37,4 +37,14 @@ class DiagnosticReportTest extends TestCase
             ->assertSee('## Dictionnaire des mesures', false)
             ->assertSee('Chaudière injoignable', false);
     }
+
+    public function test_dashboard_link_includes_the_token_when_there_is_one(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->get('/')->assertOk()->assertSee(route('diagnostic.markdown'), false)->assertDontSee('diagnostic.md?token=', false);
+
+        settings()->set('diagnostic.token', 'secret-token');
+        $this->get('/')->assertOk()->assertSee(route('diagnostic.markdown', ['token' => 'secret-token']), false);
+    }
 }

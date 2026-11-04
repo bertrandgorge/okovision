@@ -36,8 +36,11 @@ class Dashboard extends BaseDashboard
                 ->label('Rapport pour LLM')
                 ->icon(Heroicon::OutlinedDocumentText)
                 ->color('gray')
-                ->url(route('diagnostic.markdown'), shouldOpenInNewTab: true)
-                ->tooltip('Document Markdown complet à fournir à un assistant IA pour diagnostic'),
+                // Avec le jeton s'il existe : l'URL peut être copiée telle quelle et donnée à un assistant IA (sans session)
+                ->url(fn () => route('diagnostic.markdown', array_filter(['token' => settings('diagnostic.token')])), shouldOpenInNewTab: true)
+                ->tooltip(fn () => settings('diagnostic.token')
+                    ? 'Document Markdown complet à fournir à un assistant IA pour diagnostic'
+                    : 'Document Markdown complet à fournir à un assistant IA. Générez un jeton dans Paramètres pour obtenir un lien partageable.'),
             Action::make('refresh')
                 ->label('Actualiser')
                 ->icon(Heroicon::OutlinedArrowPath)

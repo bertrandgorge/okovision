@@ -136,7 +136,7 @@ class AppSettings extends Page
                             ->visible(fn () => (bool) settings('diagnostic.token'))->requiresConfirmation()
                             ->action(fn () => settings()->set('diagnostic.token', null)),
                         Action::make('open')->label('Ouvrir le rapport')->icon(Heroicon::OutlinedDocumentText)->color('gray')
-                            ->url(fn () => route('diagnostic.markdown'), shouldOpenInNewTab: true),
+                            ->url(fn () => route('diagnostic.markdown', array_filter(['token' => settings('diagnostic.token')])), shouldOpenInNewTab: true),
                     ]),
                 ]),
             Section::make('Seuils par défaut des alertes')->columns(3)->collapsed()->schema([
