@@ -67,9 +67,7 @@ class Dashboard extends BaseDashboard
         $charts = app(ChartFactory::class);
 
         $day = $last ? substr($last->ts, 0, 10) : now()->format('Y-m-d');
-        $range = DB::table('measurements')->whereBetween('ts', [$day.' 00:00:00', $day.' 23:59:59'])
-            ->selectRaw('MIN(outside_temp) out_min, MAX(outside_temp) out_max, MIN(hc1_room_temp) room_min, MAX(hc1_room_temp) room_max')
-            ->first();
+        $range = $this->dayRange($live['values'] ?? [], $day);
         $dayCharts = $charts->day($day);
 
         // Les recommandations ne nécessitent pas la chaudière : on utilise les derniers réglages connus (cache)
@@ -110,5 +108,37 @@ class Dashboard extends BaseDashboard
             'alerts' => AlertEvent::query()->whereNull('resolved_at')->latest('triggered_at')->limit(5)->get(),
             'advice' => $advice,
         ];
+    }
+
+    /**
+     * Min/max du jour des T extérieure et ambiance, cohérents avec les valeurs affichées.
+     * Avec une lecture directe (valeur affichée = maintenant), on prend les mesures d'aujourd'hui et on y ajoute cette
+     * lecture : les CSV n'arrivent que toutes les 30 min à 2 h, la valeur en direct peut sortir de leur plage.
+     * Sans lecture directe, la valeur affichée est la dernière mesure : on garde la plage de son jour.
+     *
+     * @param  array<string, mixed>  $live
+     */
+    private function dayRange(array $live, string $lastDay): object
+    {
+        $hasLive = isset($live['outside_temp']) || isset($live['hc1_room_temp']);
+        $day = $hasLive ? now()->format('Y-m-d') : $lastDay;
+
+        $r = DB::table('measurements')->whereBetween('ts', [$day.' 00:00:00', $day.' 23:59:59'])
+            ->selectRaw('MIN(outside_temp) out_min, MAX(outside_temp) out_max, MIN(hc1_room_temp) room_min, MAX(hc1_room_temp) room_max')
+            ->first();
+
+        $extend = function (?float $min, ?float $max, mixed $value): array {
+            if ($value === null) {
+                return [$min, $max];
+            }
+            $value = (float) $value;
+
+            return [$min === null ? $value : min($min, $value), $max === null ? $value : max($max, $value)];
+        };
+
+        [$outMin, $outMax] = $extend($r?->out_min === null ? null : (float) $r->out_min, $r?->out_max === null ? null : (float) $r->out_max, $live['outside_temp'] ?? null);
+        [$roomMin, $roomMax] = $extend($r?->room_min === null ? null : (float) $r->room_min, $r?->room_max === null ? null : (float) $r->room_max, $live['hc1_room_temp'] ?? null);
+
+        return (object) ['out_min' => $outMin, 'out_max' => $outMax, 'room_min' => $roomMin, 'room_max' => $roomMax];
     }
 }
