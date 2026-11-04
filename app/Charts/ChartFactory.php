@@ -78,7 +78,7 @@ class ChartFactory
             'xAxis' => $xAxis,
             'yAxis' => [
                 ['type' => 'value', 'name' => '°C', 'scale' => true],
-                ['type' => 'value', 'name' => 'Ambiance °C', 'scale' => true, 'splitLine' => ['show' => false], 'minInterval' => 0.5],
+                ['type' => 'value', 'name' => 'Ext. / ambiance °C', 'scale' => true, 'splitLine' => ['show' => false], 'minInterval' => 0.5],
             ],
             'dataZoom' => $zoom,
             'series' => [
@@ -86,7 +86,7 @@ class ChartFactory
                 $line('T départ', $s('hc1_flow_temp'), self::COLORS['flow']),
                 $line('Consigne départ', $s('hc1_flow_set', $setOrNull('hc1_flow_set')), self::COLORS['flow_set'], ['lineStyle' => ['type' => 'dashed', 'width' => 1.2, 'color' => self::COLORS['flow_set']]]),
                 $line('T ECS', $s('dhw1_temp_on'), self::COLORS['dhw']),
-                $line('T extérieure', $s('outside_temp'), self::COLORS['outside']),
+                $line('T extérieure', $s('outside_temp'), self::COLORS['outside'], ['yAxisIndex' => 1]),
                 $line('T ambiante', $s('hc1_room_temp'), self::COLORS['room'], ['yAxisIndex' => 1, 'lineStyle' => ['width' => 2.2, 'color' => self::COLORS['room']]]),
                 $line('Consigne ambiante', $s('hc1_room_set', $setOrNull('hc1_room_set')), self::COLORS['room_set'], ['yAxisIndex' => 1, 'step' => 'end', 'lineStyle' => ['type' => 'dashed', 'color' => self::COLORS['room_set']]]),
             ],
