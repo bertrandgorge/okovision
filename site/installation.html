@@ -196,13 +196,19 @@ DB_HOST=localhost
 DB_DATABASE=cpaneluser_okovision
 DB_USERNAME=cpaneluser_okovision
 DB_PASSWORD=…
-MAIL_MAILER=smtp           # pour les alertes par e-mail
+MAIL_MAILER=smtp           # indispensable : liens de connexion et alertes
+MAIL_HOST=mail.mondomaine.fr
+MAIL_PORT=465
+MAIL_SCHEME=smtps
+MAIL_USERNAME=okovision@mondomaine.fr
+MAIL_PASSWORD=…
+MAIL_FROM_ADDRESS=okovision@mondomaine.fr
 BOILER_URL=http://maison.ddns.net:8041</code></pre></li>
         <li><strong>Initialisation</strong> :
 <pre><code>php artisan key:generate
 php artisan migrate --force
 php artisan db:seed --force      # règles d'alerte par défaut
-php artisan make:filament-user   # votre compte
+php artisan okovision:user moi@mondomaine.fr   # votre compte + un lien de connexion
 php artisan storage:link</code></pre></li>
         <li><strong>Domaine</strong> : cPanel › Domaines. Créez un sous-domaine (par exemple <code>chaudiere.mondomaine.fr</code>) dont la racine est
           <code>okovision/public</code>, puis activez le certificat SSL (AutoSSL / Let's Encrypt).</li>
@@ -215,7 +221,13 @@ php artisan storage:link</code></pre></li>
         Les CSV sont récupérés toutes les 30 minutes ; le bouton « Actualiser » du tableau de bord force une récupération.</p>
 
       <h2 id="configuration">5. Configurer Okovision</h2>
-      <p>Connectez-vous avec le compte créé, puis ouvrez <em>Administration › Paramètres</em>.</p>
+      <div class="note">
+        <p><strong>Connexion sans mot de passe.</strong> Sur la page de connexion, saisissez votre adresse e-mail : vous recevez un lien valable 15 minutes, à usage unique.
+          Une fois connecté, vous le restez sur cet appareil (le cookie est prolongé à chaque visite). Se déconnecter invalide aussi la connexion mémorisée sur vos autres appareils.
+          Si l'envoi d'e-mails ne fonctionne pas encore, <code>php artisan okovision:user moi@mondomaine.fr</code> affiche un lien de connexion dans le terminal.
+          Pour ajouter une personne, lancez la même commande avec son adresse.</p>
+      </div>
+      <p>Connectez-vous, puis ouvrez <em>Administration › Paramètres</em>.</p>
       <figure class="shot"><img src="assets/img/parametres.jpg" width="1600" height="1000" loading="lazy" alt="Paramètres de connexion à la chaudière dans Okovision"></figure>
       <ol class="steps">
         <li><strong>Connexion à la chaudière</strong> : l'URL publique (<code>http://maison.ddns.net:8041</code>), l'identifiant et le nouveau mot de passe. Cliquez sur <em>Tester la connexion</em>.
@@ -243,7 +255,7 @@ docker compose up -d                          # http://localhost:8080
 docker compose exec -u www-data app composer install
 docker compose exec -u www-data app php artisan key:generate
 docker compose exec -u www-data app php artisan migrate --seed
-docker compose exec -u www-data app php artisan make:filament-user
+docker compose exec -u www-data app php artisan okovision:user moi@example.com
 docker compose --profile scheduler up -d scheduler   # tâches planifiées</code></pre>
 
       <h2 id="maj">Mises à jour et sauvegardes</h2>

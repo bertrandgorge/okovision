@@ -9,6 +9,7 @@ Suivi, analyse et réglage d'une chaudière à granulés **Okofen Pellematic** (
 - Stock de granulés estimé à partir du comptage de la vis (calibré sur les livraisons) et projection jusqu'à épuisement.
 - Suivi du cendrier, de l'entretien et du ramonage.
 - Rapport Markdown `/diagnostic.md` à fournir à un LLM pour diagnostic et propositions de réglages.
+- Connexion sans mot de passe, par lien magique envoyé par e-mail ; on reste connecté sur l'appareil.
 - Alertes configurables (e-mail, Slack, Telegram, webhook) et archivage des données anciennes.
 
 Stack : Laravel 13, PHP 8.5, MySQL/MariaDB, Filament 5, ECharts 6.
@@ -25,7 +26,7 @@ docker compose exec -u www-data app composer install
 docker compose exec -u www-data app npm ci && npm run build
 docker compose exec -u www-data app php artisan migrate --seed
 docker compose exec -u www-data app php artisan okovision:import-legacy
-docker compose exec -u www-data app php artisan make:filament-user
+docker compose exec -u www-data app php artisan okovision:user moi@example.com   # crée le compte et affiche un lien de connexion
 ```
 
 ## Origine

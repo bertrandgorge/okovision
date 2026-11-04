@@ -41,6 +41,9 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            // Durée du cookie « se souvenir de moi » (minutes) : 400 jours, le maximum accepté par les navigateurs.
+            // Il est prolongé chaque jour de visite (App\Http\Middleware\RefreshRememberCookie).
+            'remember' => 576000,
         ],
     ],
 

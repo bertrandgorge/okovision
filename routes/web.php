@@ -1,9 +1,18 @@
 <?php
 
 use App\Http\Controllers\DiagnosticReportController;
+use App\Http\Controllers\MagicLinkController;
 use Illuminate\Support\Facades\Route;
 
 // L'interface est servie par le panneau Filament (App\Providers\Filament\AdminPanelProvider), à la racine du site.
+
+// Connexion par lien magique (envoyé par la page de connexion ou affiché par `php artisan okovision:user`)
+Route::get('/connexion/{token}', [MagicLinkController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('magic-link.show');
+Route::post('/connexion/{token}', [MagicLinkController::class, 'login'])
+    ->middleware('throttle:10,1')
+    ->name('magic-link.login');
 
 // Rapport Markdown pour diagnostic par un LLM (session ou ?token=…)
 Route::get('/diagnostic.md', DiagnosticReportController::class)

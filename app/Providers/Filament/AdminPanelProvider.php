@@ -2,6 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\EditProfile;
+use App\Filament\Auth\MagicLinkLogin;
+use App\Http\Middleware\RefreshRememberCookie;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -29,8 +32,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Okovision')
             ->favicon(asset('favicon.svg'))
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->login()
-            ->profile()
+            ->login(MagicLinkLogin::class)
+            ->profile(EditProfile::class)
             ->colors([
                 'primary' => Color::Orange,
                 'gray' => Color::Stone,
@@ -53,6 +56,7 @@ class AdminPanelProvider extends PanelProvider
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
                 AuthenticateSession::class,
+                RefreshRememberCookie::class,
                 ShareErrorsFromSession::class,
                 PreventRequestForgery::class,
                 SubstituteBindings::class,

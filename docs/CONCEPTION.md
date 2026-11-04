@@ -163,11 +163,11 @@ Les assets front (`public/build`) sont compilés en local et **versionnés** : l
    git clone https://github.com/bertrandgorge/okovision.git okovision
    cd okovision
    composer install --no-dev --optimize-autoloader
-   cp .env.example .env    # puis éditer : APP_ENV=production, APP_DEBUG=false, APP_URL, DB_*, MAIL_*, BOILER_URL
+   cp .env.example .env    # puis éditer : APP_ENV=production, APP_DEBUG=false, APP_URL, DB_*, MAIL_* (indispensable : la connexion se fait par lien envoyé par e-mail), BOILER_URL
    php artisan key:generate
    php artisan migrate --force
    php artisan db:seed --force          # règles d'alerte par défaut
-   php artisan make:filament-user
+   php artisan okovision:user moi@mondomaine.fr   # crée le compte et affiche un lien de connexion
    php artisan storage:link
    ```
 4. **cPanel › Domaines** : créer le sous-domaine (ex. `chaudiere.mondomaine.fr`) avec comme **racine `okovision/public`**, puis activer le certificat SSL (AutoSSL / Let's Encrypt).
