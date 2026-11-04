@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Analysis\PelletCalibration;
+use App\Diagnostics\ReportToken;
 use App\Okofen\BoilerClient;
 use App\Okofen\BoilerService;
 use Filament\Actions\Action;
@@ -123,20 +124,17 @@ class AppSettings extends Page
                 ->description('Document Markdown complet (installation, réglages, loi d\'eau, fonctionnement, signature, mesures) à donner à un assistant IA pour diagnostic. Accessible avec votre session, ou par cette URL secrète. Options : &days=60 (période), &sample=5 (pas des mesures 24 h, 0 = aucune), &expert=0 (sans réglages technicien).')
                 ->schema([
                     TextEntry::make('diagnostic_url')->label('URL secrète')
-                        ->state(fn () => settings('diagnostic.token') ? route('diagnostic.markdown', ['token' => settings('diagnostic.token')]) : 'Aucun jeton : générez-en un')
+                        ->state(fn () => ReportToken::url())
                         ->copyable()->fontFamily('mono'),
                     Actions::make([
-                        Action::make('newToken')->label(fn () => settings('diagnostic.token') ? 'Régénérer le jeton (invalide l\'ancienne URL)' : 'Générer un jeton')
+                        Action::make('newToken')->label('Régénérer le jeton (invalide l\'ancienne URL)')
                             ->icon(Heroicon::OutlinedKey)->color('gray')->requiresConfirmation()
                             ->action(function () {
-                                settings()->set('diagnostic.token', bin2hex(random_bytes(24)));
+                                ReportToken::regenerate();
                                 Notification::make()->title('Nouveau jeton généré')->success()->send();
                             }),
-                        Action::make('revokeToken')->label('Désactiver l\'accès par URL')->icon(Heroicon::OutlinedNoSymbol)->color('danger')
-                            ->visible(fn () => (bool) settings('diagnostic.token'))->requiresConfirmation()
-                            ->action(fn () => settings()->set('diagnostic.token', null)),
                         Action::make('open')->label('Ouvrir le rapport')->icon(Heroicon::OutlinedDocumentText)->color('gray')
-                            ->url(fn () => route('diagnostic.markdown', array_filter(['token' => settings('diagnostic.token')])), shouldOpenInNewTab: true),
+                            ->url(fn () => ReportToken::url(), shouldOpenInNewTab: true),
                     ]),
                 ]),
             Section::make('Seuils par défaut des alertes')->columns(3)->collapsed()->schema([

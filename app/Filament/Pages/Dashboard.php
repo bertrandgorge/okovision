@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Analysis\Advisor;
 use App\Analysis\StockEstimator;
 use App\Charts\ChartFactory;
+use App\Diagnostics\ReportToken;
 use App\Models\AlertEvent;
 use App\Models\DailyStat;
 use App\Okofen\BoilerService;
@@ -36,11 +37,9 @@ class Dashboard extends BaseDashboard
                 ->label('Rapport pour LLM')
                 ->icon(Heroicon::OutlinedDocumentText)
                 ->color('gray')
-                // Avec le jeton s'il existe : l'URL peut être copiée telle quelle et donnée à un assistant IA (sans session)
-                ->url(fn () => route('diagnostic.markdown', array_filter(['token' => settings('diagnostic.token')])), shouldOpenInNewTab: true)
-                ->tooltip(fn () => settings('diagnostic.token')
-                    ? 'Document Markdown complet à fournir à un assistant IA pour diagnostic'
-                    : 'Document Markdown complet à fournir à un assistant IA. Générez un jeton dans Paramètres pour obtenir un lien partageable.'),
+                // Lien partageable (avec le jeton, créé au besoin) : à copier tel quel pour un assistant IA, sans session
+                ->url(fn () => ReportToken::url(), shouldOpenInNewTab: true)
+                ->tooltip('Document Markdown complet à fournir à un assistant IA pour diagnostic'),
             Action::make('refresh')
                 ->label('Actualiser')
                 ->icon(Heroicon::OutlinedArrowPath)

@@ -38,13 +38,17 @@ class DiagnosticReportTest extends TestCase
             ->assertSee('Chaudière injoignable', false);
     }
 
-    public function test_dashboard_link_includes_the_token_when_there_is_one(): void
+    public function test_dashboard_link_includes_a_token_created_on_the_fly(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $this->get('/')->assertOk()->assertSee(route('diagnostic.markdown'), false)->assertDontSee('diagnostic.md?token=', false);
+        $this->get('/')->assertOk();
+        $token = settings('diagnostic.token');
+        $this->assertNotEmpty($token);
+        $this->get('/')->assertOk()->assertSee(route('diagnostic.markdown', ['token' => $token]), false);
+        $this->assertSame($token, settings('diagnostic.token'), 'le jeton existant est réutilisé');
 
-        settings()->set('diagnostic.token', 'secret-token');
-        $this->get('/')->assertOk()->assertSee(route('diagnostic.markdown', ['token' => 'secret-token']), false);
+        auth()->logout();
+        $this->get('/diagnostic.md?token='.$token.'&sample=0')->assertOk();
     }
 }
