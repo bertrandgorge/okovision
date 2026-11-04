@@ -25,7 +25,7 @@ class Optimization extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'Réglages';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $slug = 'optimisation';
 

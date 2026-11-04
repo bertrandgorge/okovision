@@ -100,7 +100,7 @@
                     @php $p = $catalog->parameter($h->name); @endphp
                     <tr>
                         <td class="py-1.5">{{ $h->created_at->format('d/m/Y H:i') }}</td>
-                        <td>{{ $p ? $catalog->label($p) : $h->name }}</td>
+                        <td>{{ $p ? $catalog->label($p) : (\App\Okofen\TimeProgram::labelFor($h->name) ?? $h->name) }}</td>
                         <td>{{ $h->old_value }}</td>
                         <td class="font-medium">{{ $h->new_value }}</td>
                         <td>{{ ['manual' => 'manuel', 'curve' => 'loi d\'eau', 'optimizer' => 'pilotage', 'advisor' => 'recommandation', 'profile' => 'profil'][$h->source] ?? $h->source }}</td>
