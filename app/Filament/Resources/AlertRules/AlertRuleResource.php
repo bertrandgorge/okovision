@@ -6,6 +6,7 @@ use App\Alerts\AlertEvaluator;
 use App\Alerts\AlertType;
 use App\Filament\Resources\AlertRules\Pages\ManageAlertRules;
 use App\Models\AlertRule;
+use App\Models\NotificationChannel;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -22,6 +23,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 
 class AlertRuleResource extends Resource
@@ -90,6 +92,7 @@ class AlertRuleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('channels:id'))
             ->emptyStateHeading('Aucune règle d\'alerte')
             ->emptyStateDescription('Créez une règle ou lancez « php artisan db:seed » pour les règles par défaut.')
             ->columns([
@@ -98,22 +101,27 @@ class AlertRuleResource extends Resource
                 TextColumn::make('params')->label('Seuils')->state(fn (AlertRule $r) => collect($r->params ?? [])->map(fn ($v, $k) => "$k : $v")->implode(', ')),
                 TextColumn::make('severity')->label('Gravité')->badge()
                     ->color(fn ($state) => ['critical' => 'danger', 'warning' => 'warning', 'info' => 'info'][$state] ?? 'gray'),
-                TextColumn::make('channels.name')->label('Canaux')->badge()->placeholder('aucun'),
+                // Une icône par canal existant : cliquer branche ou débranche le canal pour cette règle
+                ViewColumn::make('channels')->label('Canaux')->view('filament.tables.alert-rule-channels')->disabledClick()
+                    ->viewData(['allChannels' => NotificationChannel::orderBy('name')->get()]),
                 IconColumn::make('active')->label('En cours')->boolean()->trueColor('danger')->falseColor('success')
                     ->trueIcon(Heroicon::OutlinedExclamationTriangle)->falseIcon(Heroicon::OutlinedCheckCircle),
                 ToggleColumn::make('enabled')->label('Active'),
             ])
             ->recordActions([
-                Action::make('check')->label('Évaluer')->icon(Heroicon::OutlinedPlay)
-                    ->action(function (AlertRule $record) {
-                        $r = app(AlertEvaluator::class)->evaluate($record);
-                        Notification::make()
-                            ->title($r->triggered ? 'Condition vraie : '.$r->title : 'Condition fausse')
-                            ->body($r->message ?: null)
-                            ->color($r->triggered ? 'warning' : 'success')->send();
-                    }),
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()->iconButton()
+                    ->extraModalFooterActions(fn (EditAction $action) => [
+                        Action::make('check')->label('Évaluer')->icon(Heroicon::OutlinedPlay)->color('gray')
+                            ->tooltip('Évalue la règle telle qu\'enregistrée (enregistrez d\'abord vos modifications)')
+                            ->action(function () use ($action) {
+                                $r = app(AlertEvaluator::class)->evaluate($action->getRecord());
+                                Notification::make()
+                                    ->title($r->triggered ? 'Condition vraie : '.$r->title : 'Condition fausse')
+                                    ->body($r->message ?: null)
+                                    ->color($r->triggered ? 'warning' : 'success')->send();
+                            }),
+                    ]),
+                DeleteAction::make()->iconButton(),
             ]);
     }
 

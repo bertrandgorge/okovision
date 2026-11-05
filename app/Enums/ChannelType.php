@@ -2,9 +2,11 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
-enum ChannelType: string implements HasLabel
+enum ChannelType: string implements HasIcon, HasLabel
 {
     case Email = 'email';
     case Slack = 'slack';
@@ -18,6 +20,16 @@ enum ChannelType: string implements HasLabel
             self::Slack => 'Slack (webhook entrant)',
             self::Telegram => 'Telegram (bot)',
             self::Webhook => 'Webhook HTTP (JSON)',
+        };
+    }
+
+    public function getIcon(): Heroicon
+    {
+        return match ($this) {
+            self::Email => Heroicon::OutlinedEnvelope,
+            self::Slack => Heroicon::OutlinedHashtag,
+            self::Telegram => Heroicon::OutlinedPaperAirplane,
+            self::Webhook => Heroicon::OutlinedCodeBracketSquare,
         };
     }
 }
