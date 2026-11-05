@@ -43,7 +43,7 @@ enum AlertType: string implements HasDescription, HasLabel
             self::SiloLow => 'Stock estimé sous un seuil (kg) ou épuisement prévu dans moins de N jours.',
             self::AshFull => 'Granulés brûlés depuis le dernier vidage au-delà de N % de la capacité du cendrier.',
             self::RoomTempLow => 'Température ambiante sous le seuil.',
-            self::DhwTempLow => 'Température du ballon ECS sous le seuil.',
+            self::DhwTempLow => 'Température du ballon ECS sous le seuil, pendant la plage horaire ECS et au moins 2 h après son début (hors plage, la chaudière laisse volontairement le ballon refroidir).',
             self::ShortCycling => 'Nombre de cycles de la veille supérieur au seuil.',
             self::MaintenanceDue => 'Dernier entretien annuel il y a plus de N jours.',
             self::SweepDue => 'Dernier ramonage il y a plus de N jours.',

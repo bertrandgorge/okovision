@@ -7,6 +7,7 @@ use App\Filament\Resources\AlertRules\Pages\ManageAlertRules;
 use App\Models\AlertRule;
 use App\Models\NotificationChannel;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -50,8 +51,8 @@ class AlertRuleChannelsTest extends TestCase
             ->assertHasNoErrors();
 
         Livewire::test(ManageAlertRules::class)
-            ->mountAction(\Filament\Actions\Testing\TestAction::make('edit')->table($rule))
-            ->callAction(\Filament\Actions\Testing\TestAction::make('check')->table($rule)->schemaComponent(null))
+            ->mountAction(TestAction::make('edit')->table($rule))
+            ->callAction(TestAction::make('check')->table($rule)->schemaComponent(null))
             ->assertNotified();
     }
 }

@@ -4,6 +4,7 @@ namespace App\Okofen;
 
 use App\Models\BoilerParameterChange;
 use App\Okofen\Exceptions\BoilerException;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Programmes horaires du Pelletronic Touch (chauffage, eau chaude, circulation), 2 programmes par circuit.
@@ -29,6 +30,9 @@ class TimeProgram
     public const SHORT_DAYS = [1 => 'Lu', 2 => 'Ma', 3 => 'Me', 4 => 'Je', 5 => 'Ve', 6 => 'Sa', 0 => 'Di'];
 
     public const SLOTS = 3;
+
+    /** Clé de cache des plages ECS utilisées par les alertes (vidée à chaque écriture d'un programme ECS). */
+    public const DHW_WINDOWS_CACHE = 'alerts.dhw_windows';
 
     public function __construct(private BoilerClient $client, private BoilerService $boiler) {}
 
@@ -97,6 +101,9 @@ class TimeProgram
         }
 
         $base = self::base($circuit, $program);
+        if ($circuit === 'ww') {
+            Cache::forget(self::DHW_WINDOWS_CACHE);
+        }
         $current = $this->readRaw($circuit, $program);
         $target = self::encode($days, $base);
         $diff = array_filter($target, fn ($v, $name) => ! isset($current[$name]) || (float) $current[$name] !== (float) $v, ARRAY_FILTER_USE_BOTH);

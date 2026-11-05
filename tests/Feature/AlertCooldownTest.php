@@ -11,6 +11,7 @@ use App\Models\AlertRule;
 use App\Models\NotificationChannel;
 use App\Okofen\BoilerService;
 use App\Okofen\Catalog;
+use App\Okofen\TimeProgram;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,7 +23,7 @@ class AlertCooldownTest extends TestCase
     {
         // Mock partiel construit avec les vraies dépendances (dont le Notifier, éventuellement simulé)
         $mock = \Mockery::mock(AlertEvaluator::class, [
-            app(BoilerService::class), app(StockEstimator::class), app(Catalog::class), app(Notifier::class),
+            app(BoilerService::class), app(StockEstimator::class), app(Catalog::class), app(Notifier::class), app(TimeProgram::class),
         ])->makePartial();
         $mock->shouldReceive('evaluate')->andReturn(new AlertResult(true, 'Silo bas', 'Il reste 50 kg'));
 

@@ -10,6 +10,9 @@ use App\Models\AlertRule;
 use App\Models\StockEvent;
 use App\Okofen\BoilerService;
 use App\Okofen\Catalog;
+use App\Okofen\TimeProgram;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -17,6 +20,9 @@ use Illuminate\Support\Facades\DB;
  */
 class AlertEvaluator
 {
+    /** Temps laissé à la chaudière, au début d'une plage ECS, pour allumer le brûleur et recharger le ballon. */
+    private const DHW_GRACE_MINUTES = 120;
+
     private ?array $live = null;
 
     private ?array $lastMeasurement = null;
@@ -26,6 +32,7 @@ class AlertEvaluator
         private readonly StockEstimator $stock,
         private readonly Catalog $catalog,
         private readonly Notifier $notifier,
+        private readonly TimeProgram $timePrograms,
     ) {}
 
     /** @return list<string> journal des actions */
@@ -57,7 +64,7 @@ class AlertEvaluator
             AlertType::SiloLow => $this->siloLow((float) $p('kg'), (int) $p('days')),
             AlertType::AshFull => $this->ashFull((float) $p('pct')),
             AlertType::RoomTempLow => $this->threshold('hc1_room_temp', 'room_temp_low', (float) $p('temp'), 'Température ambiante basse'),
-            AlertType::DhwTempLow => $this->threshold('dhw1_temp_on', 'dhw_temp_low', (float) $p('temp'), 'Eau chaude sanitaire froide'),
+            AlertType::DhwTempLow => $this->dhwTempLow((float) $p('temp')),
             AlertType::ShortCycling => $this->shortCycling((int) $p('cycles')),
             AlertType::MaintenanceDue => $this->due(StockEventType::Maintenance, (int) $p('days'), 'Entretien annuel'),
             AlertType::SweepDue => $this->due(StockEventType::Sweep, (int) $p('days'), 'Ramonage'),
@@ -195,6 +202,51 @@ class AlertEvaluator
         return $value !== null && (float) $value < $limit
             ? new AlertResult(true, $title, sprintf('%s : %.1f °C (seuil %.1f °C).', $title, $value, $limit), [$key => $value])
             : AlertResult::ok([$key => $value]);
+    }
+
+    /**
+     * Ballon ECS froid, seulement pendant une plage ECS et au moins 2 h après son début :
+     * hors plage la chaudière laisse le ballon descendre jusqu'à son minimum, et au début de la plage
+     * il faut le temps d'allumer le brûleur et de recharger le ballon.
+     */
+    private function dhwTempLow(float $limit): AlertResult
+    {
+        $row = $this->lastMeasurement();
+        $windows = $this->dhwWindows();
+        if ($row && $windows !== null) {
+            $ts = CarbonImmutable::parse($row['ts']);
+            $minute = $ts->hour * 60 + $ts->minute;
+            $inWindow = collect($windows[$ts->dayOfWeek] ?? [])
+                ->contains(fn (array $w) => $minute >= $w[0] + self::DHW_GRACE_MINUTES && $minute < $w[1]);
+            if (! $inWindow) {
+                return AlertResult::ok(['dhw_temp_low' => $row['dhw1_temp_on'] ?? null, 'ignored' => 'hors plage ECS ou délai de chauffe']);
+            }
+        }
+
+        return $this->threshold('dhw1_temp_on', 'dhw_temp_low', $limit, 'Eau chaude sanitaire froide');
+    }
+
+    /**
+     * Plages du programme ECS actif (jour 0 = dimanche => [[début, fin] en minutes]), en cache 6 h.
+     * null si la chaudière est injoignable : l'alerte s'applique alors sans filtre horaire.
+     *
+     * @return array<int, list<array{0: int, 1: int}>>|null
+     */
+    private function dhwWindows(): ?array
+    {
+        $cached = Cache::get(TimeProgram::DHW_WINDOWS_CACHE);
+        if ($cached !== null) {
+            return $cached;
+        }
+        try {
+            $program = $this->timePrograms->read('ww', 0);
+            $days = $program['active'] === 1 ? $this->timePrograms->read('ww', 1)['days'] : $program['days'];
+        } catch (\Throwable) {
+            return null;
+        }
+        Cache::put(TimeProgram::DHW_WINDOWS_CACHE, $days, now()->addHours(6));
+
+        return $days;
     }
 
     private function shortCycling(int $max): AlertResult
