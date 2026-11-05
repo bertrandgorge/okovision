@@ -73,8 +73,20 @@ class StockEventResource extends Resource
                 TextColumn::make('price')->label('Prix')->money('EUR', locale: 'fr')->placeholder('—'),
                 TextColumn::make('price_per_ton')->label('€/t')
                     ->state(fn (StockEvent $r) => $r->price && $r->quantity_kg ? round($r->price * 1000 / $r->quantity_kg) : null)->placeholder('—'),
-                TextColumn::make('supplier')->label('Fournisseur')->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('notes')->label('Notes')->limit(40)->toggleable(),
+                TextColumn::make('supplier')->label('Fournisseur / intervenant')->placeholder('—'),
+                TextColumn::make('energy_index')->label('Énergie relative')
+                    ->state(fn (StockEvent $r) => ($b = self::batch($r)) && $b['energy_index'] !== null
+                        ? ($b['energy_estimated'] ? '≈ ' : '').$b['energy_index'].' %'.($b['energy_provisional'] ? ' (provisoire)' : '') : null)
+                    ->placeholder('—')
+                    ->color(fn (StockEvent $r) => ($e = self::batch($r)['energy_index'] ?? null) === null ? null : ($e < 90 ? 'danger' : ($e > 110 ? 'success' : null)))
+                    ->tooltip(fn (StockEvent $r) => ($b = self::batch($r)) && $b['warmups']
+                        ? sprintf('Lot consommé du %s au %s : %d démarrages mesurés (100 %% = lot médian).%s Détail dans Silo & cendrier.',
+                            \Carbon\Carbon::parse($b['from'])->format('d/m/Y'), \Carbon\Carbon::parse($b['to'])->format('d/m/Y'), $b['warmups'],
+                            ($b['energy_estimated'] ? ($b['current'] ? ' Lot en cours : estimé avec le débit moyen de la vis.' : ' Estimé avec le débit moyen de la vis : mesures du lot incomplètes.') : '')
+                            .($b['energy_provisional'] ? ' Provisoire : moins de 30 démarrages.' : ''))
+                        : 'Non mesuré : lot sans niveau connu à la livraison et au contrôle suivant, ou trop peu de démarrages.')
+                    ->toggleable(),
+                TextColumn::make('notes')->label('Notes')->limit(40)->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([SelectFilter::make('type')->options(StockEventType::class)])
             ->recordActions([
@@ -82,6 +94,16 @@ class StockEventResource extends Resource
                 DeleteAction::make()->after(fn () => app(PelletCalibration::class)->flush()),
             ])
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
+    }
+
+    /** Lot de granulés qui commence avec cette livraison (intervalle de calibration), s'il est connu. */
+    private static function batch(StockEvent $r): ?array
+    {
+        if ($r->type !== StockEventType::Refill) {
+            return null;
+        }
+
+        return app(PelletCalibration::class)->intervals()->firstWhere('from_event_id', $r->id);
     }
 
     public static function getPages(): array

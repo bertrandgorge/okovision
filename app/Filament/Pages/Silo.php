@@ -100,7 +100,7 @@ class Silo extends Page
             'ash' => $ash,
             'siloGauge' => $charts->gauge($silo['pct'], 'stock'),
             'ashGauge' => $charts->gauge($ash['pct'], 'remplissage', '%', [[0.7, '#16a34a'], [0.85, '#f59e0b'], [1, '#ef4444']]),
-            'history' => $charts->stockHistory($silo, app(EnergySignature::class)->normalOutsideByDayOfYear()),
+            'history' => $charts->stockHistory($silo, app(EnergySignature::class)->normalOutsideByDayOfYear(), ash: $ash),
             'intervals' => $calibration->intervals()->sortByDesc('from')->take(12),
             'grams' => $calibration->gramsPerMinute(),
             'events' => StockEvent::query()->latest('occurred_on')->limit(10)->get(),

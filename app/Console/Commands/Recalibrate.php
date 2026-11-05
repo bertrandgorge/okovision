@@ -20,7 +20,7 @@ class Recalibrate extends Command
         $this->table(
             ['Du', 'Au', 'Consommé (kg)', 'Minutes de vis', 'Couverture', 'g/min', 'Retenu'],
             $intervals->map(fn ($i) => [
-                $i['from'], $i['to'], $i['consumed_kg'], $i['auger_min'], round($i['coverage'] * 100).' %',
+                $i['from'], ($i['current'] ?? false) ? 'en cours' : $i['to'], $i['consumed_kg'] ?? '—', $i['auger_min'], round($i['coverage'] * 100).' %',
                 $i['grams_per_minute'] ?? '—', $i['valid'] ? 'oui' : 'non',
             ])
         );

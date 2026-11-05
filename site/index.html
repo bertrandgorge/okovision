@@ -141,14 +141,34 @@
         <div class="text">
           <h3>Silo de granulés et cendrier</h3>
           <p>Le stock est calculé à partir du temps de marche de la vis multiplié par son débit. Ce débit est <strong>recalibré automatiquement</strong>
-            à chaque livraison ou contrôle de niveau. La date d'épuisement est projetée avec la signature énergétique et les températures normales de la saison.</p>
+            à chaque livraison ou contrôle de niveau.</p>
           <ul>
             <li>Saisie rapide : livraison, contrôle de niveau, cendrier vidé, entretien, ramonage.</li>
             <li>Remplissage du cendrier estimé d'après les granulés brûlés depuis le dernier vidage.</li>
+            <li>Alertes avant que le silo soit vide ou que le cendrier soit plein.</li>
           </ul>
         </div>
-        <figure class="shot"><img src="assets/img/silo.jpg" width="1600" height="1000" loading="lazy" alt="Jauges du silo et du cendrier"></figure>
+        <figure class="shot"><img src="assets/img/silo.jpg" width="1600" height="1000" loading="lazy" alt="Jauges du silo et du cendrier, stock estimé, date d'épuisement et date du prochain vidage"></figure>
       </div>
+
+      <div class="prose" style="margin-top:32px">
+        <h3>Quand le silo sera-t-il vide ?</h3>
+        <p>Okovision reconstitue l'historique du stock et le remplissage du cendrier jour après jour, puis les <strong>projette dans l'avenir</strong>.
+          Il estime la consommation de chaque jour à venir avec la signature énergétique de la maison et la température normale de ce jour-là,
+          calculée sur les années précédentes. Il en déduit la <strong>date à laquelle le silo sera vide</strong>, pour commander à temps,
+          et celle à laquelle le cendrier sera plein. Si le cendrier a dépassé sa capacité avant d'être vidé, ce débordement apparaît en rouge.</p>
+      </div>
+      <figure class="shot" style="margin-top:16px"><img src="assets/img/silo-projection.jpg" width="1216" height="469" loading="lazy" alt="Graphique du stock de granulés et du remplissage du cendrier sur un an, avec leur projection jusqu'à l'épuisement du silo"><figcaption>Stock du silo (vert) et remplissage du cendrier (gris, débordement en rouge), puis leur projection en pointillés : ici, silo vide mi-février et cendrier plein fin décembre.</figcaption></figure>
+
+      <div class="prose" style="margin-top:32px">
+        <h3>Comparer les lots de granulés</h3>
+        <p>D'une livraison à l'autre, les granulés ne se valent pas : densité, humidité, pouvoir calorifique. Okovision compare les lots
+          sur deux critères. Le premier est la <strong>consommation par degré-jour</strong>, qui neutralise la météo. Le second est
+          l'<strong>énergie relative</strong>, mesurée au démarrage du brûleur après un long arrêt : tant que la vanne mélangeuse est fermée,
+          toute la chaleur reste dans la chaudière. Sa montée en température, rapportée aux kilos brûlés, indique l'énergie réellement récupérée par kilo.
+          Le résultat est un indice, 100 % correspondant au lot médian, affiché à côté du fournisseur de chaque livraison.</p>
+      </div>
+      <figure class="shot" style="margin-top:16px"><img src="assets/img/silo-lots.jpg" width="1216" height="700" loading="lazy" alt="Tableau de calibration des lots de granulés : consommation, débit de la vis, kg par degré-jour et énergie relative"><figcaption>Chaque période entre deux niveaux connus : débit de la vis, consommation par degré-jour et énergie relative du lot.</figcaption></figure>
 
       <div class="feature reverse">
         <div class="text">

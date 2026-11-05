@@ -63,7 +63,7 @@ class ImportLegacy extends Command
         foreach ($rows as $r) {
             $type = self::EVENT_TYPES[trim($r->event_type)] ?? StockEventType::Other;
             StockEvent::query()->updateOrCreate(
-                ['occurred_on' => $r->event_date, 'type' => $type, 'notes' => 'Import ancienne application #'.$r->id],
+                ['occurred_on' => $r->event_date, 'type' => $type],
                 [
                     'quantity_kg' => $type === StockEventType::Refill ? (int) $r->quantity : null,
                     'remaining_kg' => $type === StockEventType::Refill ? (int) $r->remaining : null,

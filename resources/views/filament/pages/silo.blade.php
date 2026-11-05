@@ -31,27 +31,41 @@
         </x-filament::section>
     </div>
 
-    <x-filament::section heading="Évolution du stock et projection" description="Projection basée sur la signature énergétique et les températures normales de saison.">
+    <x-filament::section heading="Évolution du stock, du cendrier et projection" description="Stock du silo en kg (axe de gauche), remplissage du cendrier en % (axe de droite). Projection basée sur la signature énergétique et les températures normales de saison.">
         <x-echart id="silo-history" :option="$history" height="340px" />
     </x-filament::section>
 
-    <div class="grid gap-6 xl:grid-cols-2">
+    <div class="grid gap-6">
         <x-filament::section heading="Calibration entre deux niveaux connus">
             <table class="w-full text-sm">
-                <thead class="text-left text-gray-500"><tr><th class="py-2">Période</th><th class="text-end">Consommé</th><th class="text-end">Minutes vis</th><th class="text-end">Données</th><th class="text-end">g/min</th></tr></thead>
+                <thead class="text-left text-gray-500"><tr><th class="py-2">Période</th><th>Fournisseur</th><th class="text-end">Consommé</th><th class="text-end">Minutes vis</th><th class="text-end">Données</th><th class="text-end">g/min</th><th class="text-end" title="Granulés consommés pour le chauffage par degré-jour (base 18 °C), eau chaude déduite">kg/DJU</th><th class="text-end" title="Énergie utile par kg comparée au lot médian (100 %)">Énergie relative</th></tr></thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-white/5">
                     @foreach ($intervals as $i)
-                        <tr @class(['opacity-50' => ! $i['valid']])>
-                            <td class="py-1.5">{{ \Carbon\Carbon::parse($i['from'])->format('d/m/y') }} → {{ \Carbon\Carbon::parse($i['to'])->format('d/m/y') }}</td>
-                            <td class="text-end">{{ $fmt($i['consumed_kg']) }} kg</td>
+                        <tr @class(['opacity-50' => ! $i['valid'] && ! ($i['current'] ?? false)])>
+                            <td class="py-1.5">{{ \Carbon\Carbon::parse($i['from'])->format('d/m/y') }} → {{ ($i['current'] ?? false) ? 'en cours' : \Carbon\Carbon::parse($i['to'])->format('d/m/y') }}</td>
+                            <td class="max-w-32 truncate" title="{{ $i['supplier'] ?? '' }}">{{ ($i['supplier'] ?? null) ?: '—' }}</td>
+                            <td class="text-end">{{ $i['consumed_kg'] === null ? '—' : $fmt($i['consumed_kg']).' kg' }}</td>
                             <td class="text-end">{{ $fmt($i['auger_min']) }}</td>
                             <td class="text-end">{{ $fmt($i['coverage'] * 100) }} %</td>
                             <td class="text-end font-medium">{{ $i['grams_per_minute'] !== null ? $fmt($i['grams_per_minute'], 1) : '—' }}</td>
+                            <td class="text-end" title="{{ $fmt($i['dju'] ?? null) }} DJU">{{ ($i['kg_per_dju'] ?? null) !== null ? $fmt($i['kg_per_dju'], 2) : '—' }}</td>
+                            @php $e = $i['energy_index'] ?? null; $est = $i['energy_estimated'] ?? false; $prov = $i['energy_provisional'] ?? false; @endphp
+                            <td @class(['text-end font-medium', 'italic' => $est && $e !== null, 'text-danger-600' => $e !== null && $e < 90, 'text-success-600' => $e !== null && $e > 110])
+                                title="{{ $i['warmups'] ?? 0 }} démarrage(s) mesuré(s){{ ($i['rise_per_kg'] ?? null) !== null ? ' · '.$fmt($i['rise_per_kg'], 1).' K de montée par kg' : '' }}{{ $est && $e !== null ? ' · estimé avec le débit moyen des lots bien mesurés ('.$fmt($i['energy_grams_per_minute'], 1).' g/min)' : '' }}{{ $prov ? ' · provisoire : moins de 30 démarrages, valeur encore peu fiable' : '' }}">{{ $e !== null ? ($est ? '≈ ' : '').$e.' %' : '—' }}@if ($prov)<span class="block text-xs font-normal text-gray-500">provisoire ({{ $i['warmups'] }} démarrages)</span>@endif</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
-            <p class="mt-2 text-xs text-gray-500">Les périodes grisées sont ignorées (données manquantes &gt; 10 % ou valeur aberrante).</p>
+            <p class="mt-2 text-xs text-gray-500">Les périodes grisées sont ignorées (données manquantes &gt; 10 % ou valeur aberrante).
+                kg/DJU : granulés consommés pour le chauffage par degré-jour, eau chaude déduite. Plus il est bas, plus le lot de granulés (ou l'installation) est efficace ; non calculé sous 100 DJU.</p>
+            <p class="mt-2 text-xs text-gray-500"><strong>Énergie relative</strong> : énergie utile apportée par un kg de granulés du lot, comparée au lot médian (100 %).
+                Elle est mesurée au démarrage du brûleur après un long arrêt : tant que la vanne mélangeuse est fermée et que l'eau chaude ne tourne pas,
+                toute la chaleur reste dans la chaudière. Sa montée en température au-delà de {{ (int) \App\Analysis\DayAggregator::WARMUP_FROM }} °C (en dessous, elle dépend surtout de la température de départ, plus basse en début de saison) rapportée aux kg brûlés (vis × débit calibré du lot) indique l'énergie réellement récupérée par kg :
+                pouvoir calorifique, humidité des granulés et qualité de combustion. C'est une comparaison entre lots, pas un rendement en kWh/kg (la capacité thermique de la chaudière n'est pas connue).
+                Il faut au moins 30 démarrages mesurés ; une variation d'environ ±10 % d'un lot à l'autre reste dans la marge d'incertitude.
+                Pour les lots dont les mesures sont trop incomplètes pour calibrer leur propre débit de vis (lignes grisées), les kg brûlés sont estimés avec le débit moyen des lots bien mesurés :
+                l'indice est alors précédé de « ≈ » et ne tient pas compte d'un éventuel écart de densité du lot. C'est aussi le cas du lot en cours, dont le débit ne sera connu qu'au prochain niveau saisi ; sa valeur reste provisoire tant qu'il compte moins de 30 démarrages.
+                Le fournisseur est celui de la livraison qui ouvre la période.</p>
         </x-filament::section>
 
         <x-filament::section heading="Derniers événements">

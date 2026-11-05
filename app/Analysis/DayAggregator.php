@@ -24,6 +24,9 @@ class DayAggregator
 
     public const FAULTS = [8, 9, 11];
 
+    /** Température de chaudière (°C) à partir de laquelle la montée « à vide » est mesurée (voir warmup()). */
+    public const WARMUP_FROM = 66.0;
+
     private const COLUMNS = ['ts', 'outside_temp', 'boiler_temp', 'hc1_flow_temp', 'hc1_flow_set', 'hc1_room_temp',
         'hc1_room_set', 'hc1_pump', 'dhw1_temp_on', 'dhw1_pump', 'pe1_flame_temp', 'pe1_auger_run', 'pe1_auger_pause',
         'pe1_fan', 'pe1_status', 'pe1_motor_ignition'];
@@ -88,12 +91,14 @@ class DayAggregator
                     'minutes' => 0, 'ignition' => 0, 'combustion' => 0, 'runon' => 0, 'auger' => 0.0,
                     'cold' => false, 'dhw' => false, 'heating' => false,
                     'outside' => [], 'boiler_start' => $r->boiler_temp, 'boiler_max' => null, 'fan' => [], 'flame' => [],
+                    'rows' => [],
                 ];
             }
 
             if ($current) {
                 $current['ended_at'] = $ts->addMinute()->format('Y-m-d H:i:s');
                 $current['minutes']++;
+                $current['rows'][] = $r;
                 $current['ignition'] += $status === self::IGNITION ? 1 : 0;
                 $current['runon'] += $status === self::RUNON ? 1 : 0;
                 $current['auger'] += self::augerRatio($r);
@@ -140,9 +145,63 @@ class DayAggregator
         return $run > 0 ? $run / ($run + $pause) : 0.0;
     }
 
+    /**
+     * Montée en température « à vide » au début de la combustion : tant que ni l'eau chaude ni le chauffage
+     * ne prélèvent de chaleur (pompe ECS arrêtée, départ chauffage qui ne monte pas : vanne mélangeuse fermée),
+     * toute la chaleur produite reste dans la chaudière. Montée (K) ÷ granulés brûlés mesure l'énergie utile par kg,
+     * à comparer d'un lot de granulés à l'autre. Seuls les démarrages après un long arrêt sont exploités.
+     *
+     * La mesure ne commence qu'à partir de WARMUP_FROM °C : en dessous, la montée dépend surtout de la température
+     * de départ (foyer et réfractaire froids en début de saison), ce qui gonflait les valeurs d'automne de 35 à 45 %.
+     * Avec ce seuil, l'écart entre les mois tombe d'environ 19 % à 9 % sur l'historique.
+     *
+     * @param  list<object>  $rows  mesures du cycle, dans l'ordre
+     * @return array{warmup_min: int, warmup_rise: float, warmup_auger_min: float}|null
+     */
+    public static function warmup(array $rows): ?array
+    {
+        $begin = null;
+        $start = null;
+        $minutes = 0;
+        $auger = 0.0;
+        $last = null;
+        foreach ($rows as $r) {
+            $combustion = ($r->pe1_status ?? null) !== null && (int) $r->pe1_status === self::COMBUSTION;
+            if ($begin === null) {
+                if (! $combustion) {
+                    continue;
+                }
+                if (($r->boiler_temp ?? null) === null || ($r->hc1_flow_temp ?? null) === null) {
+                    return null;
+                }
+                $begin = $r; // début de la combustion : référence pour détecter l'ouverture du départ chauffage
+            }
+            if (! $combustion || (int) ($r->dhw1_pump ?? 0) === 1 || ($r->boiler_temp ?? null) === null
+                || (float) ($r->hc1_flow_temp ?? 999) > (float) $begin->hc1_flow_temp + 1.0) {
+                break;
+            }
+            if ($start === null) {
+                if ((float) $r->boiler_temp < self::WARMUP_FROM) {
+                    continue;
+                }
+                $start = $r;
+            }
+            $minutes++;
+            $auger += self::augerRatio($r);
+            $last = (float) $r->boiler_temp;
+        }
+
+        return $start === null || $minutes === 0 ? null : [
+            'warmup_min' => $minutes,
+            'warmup_rise' => round($last - (float) $start->boiler_temp, 1),
+            'warmup_auger_min' => round($auger, 2),
+        ];
+    }
+
     private function closeCycle(array $c, float $g): array
     {
         $avg = fn (array $v) => $v ? round(array_sum($v) / count($v), 1) : null;
+        $warmup = self::warmup($c['rows']) ?? ['warmup_min' => null, 'warmup_rise' => null, 'warmup_auger_min' => null];
 
         return [
             'started_at' => $c['started_at'],
@@ -164,7 +223,7 @@ class DayAggregator
             'boiler_temp_max' => $c['boiler_max'],
             'fan_avg' => $avg($c['fan']),
             'flame_temp_avg' => $avg($c['flame']),
-        ];
+        ] + $warmup;
     }
 
     private function storeCycles(CarbonImmutable $day, array $cycles): void

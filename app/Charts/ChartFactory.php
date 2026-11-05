@@ -535,7 +535,7 @@ class ChartFactory
     /**
      * Évolution du stock estimé (reconstitution jour par jour) et projection jusqu'à épuisement.
      */
-    public function stockHistory(array $silo, array $normals, int $days = 400): array
+    public function stockHistory(array $silo, array $normals, int $days = 400, ?array $ash = null): array
     {
         $from = now()->subDays($days)->format('Y-m-d');
         $events = DB::table('stock_events')->whereIn('type', ['refill', 'level_check'])->where('occurred_on', '>=', $from)
@@ -570,22 +570,103 @@ class ChartFactory
         }
 
         $capacity = (float) settings('equipment.silo_capacity_kg', 3500);
+        [$ashPoints, $ashForecast] = $ash !== null ? $this->ashHistory($ash, $normals, $from) : [[], []];
 
-        return [
-            'legend' => ['top' => 0],
-            'grid' => ['left' => 56, 'right' => 16, 'top' => 36, 'bottom' => 48],
-            'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@kg'],
-            'xAxis' => ['type' => 'time', 'axisLabel' => ['formatter' => '@month']],
-            'yAxis' => ['type' => 'value', 'name' => 'kg', 'min' => 0, 'max' => max($capacity, 100)],
-            'dataZoom' => [['type' => 'inside']],
-            'series' => [
+        $series = [
                 ['name' => 'Stock estimé', 'type' => 'line', 'data' => $points, 'showSymbol' => false, 'areaStyle' => ['opacity' => 0.15],
                     'itemStyle' => ['color' => '#16a34a'],
                     'markLine' => ['symbol' => 'none', 'data' => [['yAxis' => (float) settings('alerts.silo_low_kg', 500), 'name' => 'Seuil d\'alerte']],
-                        'lineStyle' => ['color' => '#ef4444', 'type' => 'dashed'], 'label' => ['formatter' => 'seuil d\'alerte']]],
+                        'lineStyle' => ['color' => '#ef4444', 'type' => 'dashed'], 'label' => ['formatter' => 'seuil d\'alerte', 'position' => 'insideStartTop']]],
                 ['name' => 'Projection', 'type' => 'line', 'data' => $forecast, 'showSymbol' => false,
                     'lineStyle' => ['type' => 'dashed'], 'itemStyle' => ['color' => '#f59e0b']],
-            ],
         ];
+        if ($ashPoints !== []) {
+            $series[] = ['name' => 'Cendrier', 'type' => 'line', 'yAxisIndex' => 1, 'data' => $ashPoints, 'showSymbol' => false,
+                'connectNulls' => false, 'itemStyle' => ['color' => '#78716c'], 'lineStyle' => ['width' => 1.5],
+                'areaStyle' => ['opacity' => 0.12], 'tooltip' => ['valueFormatter' => '@pct']];
+            // Débordement : surface rouge entre 100 % et la courbe quand le cendrier dépasse sa capacité
+            $series[] = ['name' => 'Débordement', 'type' => 'line', 'yAxisIndex' => 1, 'showSymbol' => false, 'silent' => true,
+                'data' => array_map(fn ($p) => [$p[0], $p[1] === null ? null : max(100, $p[1])], $ashPoints),
+                'lineStyle' => ['width' => 0], 'itemStyle' => ['color' => '#dc2626'],
+                'areaStyle' => ['origin' => 100, 'opacity' => 0.45, 'color' => '#dc2626'], 'tooltip' => ['show' => false]];
+            $series[] = ['name' => 'Projection cendrier', 'type' => 'line', 'yAxisIndex' => 1, 'data' => $ashForecast, 'showSymbol' => false,
+                'itemStyle' => ['color' => '#78716c'], 'lineStyle' => ['type' => 'dotted', 'width' => 1.5],
+                'tooltip' => ['valueFormatter' => '@pct']];
+        }
+
+        $ashMax = max(array_map(fn ($p) => (float) ($p[1] ?? 0), [...$ashPoints, [null, 0]]));
+
+        return [
+            'legend' => ['top' => 0, 'data' => array_values(array_filter(array_column($series, 'name'), fn ($n) => $n !== 'Débordement'))],
+            'grid' => ['left' => 56, 'right' => $ashPoints !== [] ? 48 : 16, 'top' => 36, 'bottom' => 48],
+            'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@kg'],
+            'xAxis' => ['type' => 'time', 'axisLabel' => ['formatter' => '@month']],
+            'yAxis' => array_values(array_filter([
+                ['type' => 'value', 'name' => 'kg', 'min' => 0, 'max' => max($capacity, 100)],
+                // Cendrier dans le tiers bas du graphique : 100 % à 30 % de la hauteur, graduations limitées à 0–100 %
+                $ashPoints !== [] ? ['type' => 'value', 'min' => 0, 'max' => max(round(100 / 0.3, 2), ceil($ashMax / 50) * 50), 'interval' => 50,
+                    'splitLine' => ['show' => false], 'axisLabel' => ['formatter' => '@pctUpTo100'],
+                    'axisTick' => ['show' => false]] : null,
+            ])),
+            'dataZoom' => [['type' => 'inside']],
+            'series' => $series,
+        ];
+    }
+
+    /**
+     * Remplissage du cendrier (% de sa capacité) jour par jour depuis les vidages, puis projection jusqu'à ce qu'il soit plein.
+     *
+     * @return array{0: list<array{0: string, 1: float|null}>, 1: list<array{0: string, 1: float}>}
+     */
+    private function ashHistory(array $ash, array $normals, string $from): array
+    {
+        $capacity = (float) ($ash['capacity_kg'] ?? 0);
+        if ($capacity <= 0 || ($ash['since'] ?? null) === null) {
+            return [[], []];
+        }
+
+        $emptied = DB::table('stock_events')->where('type', 'ash_emptied')->orderBy('occurred_on')
+            ->pluck('occurred_on')->map(fn ($d) => substr((string) $d, 0, 10))->unique()->values();
+        $grams = app(\App\Analysis\PelletCalibration::class)->gramsPerMinute();
+        $first = $emptied->first(fn ($d) => true);
+        $start = max($from, $first);
+        // Granulés brûlés entre le dernier vidage antérieur à la période et son début
+        $before = $emptied->filter(fn ($d) => $d <= $start)->last();
+        $burnt = (float) DB::table('daily_stats')->where('day', '>=', $before)->where('day', '<', $start)->sum('auger_min') * $grams / 1000;
+        $daily = DB::table('daily_stats')->where('day', '>=', $start)->orderBy('day')->pluck('auger_min', 'day');
+        $isEmptied = array_flip($emptied->all());
+
+        $points = [];
+        $pct = fn (float $kg) => round(100 * $kg / $capacity, 1); // > 100 % : le cendrier déborde
+        $today = now()->format('Y-m-d');
+        if ($start > $from) {
+            $points[] = [$from, null];
+        }
+        $points[] = [$start, $pct($burnt)];
+        for ($d = CarbonImmutable::parse($start); $d->format('Y-m-d') < $today; $d = $d->addDay()) {
+            $key = $d->format('Y-m-d');
+            if (isset($isEmptied[$key])) {
+                $points[] = [$key, $pct($burnt)];   // niveau juste avant le vidage, puis chute à zéro
+                $burnt = 0;
+                $points[] = [$key, 0.0];
+            }
+            $burnt += (float) ($daily[$key] ?? 0) * $grams / 1000;
+            $points[] = [$d->addDay()->format('Y-m-d'), $pct($burnt)];
+        }
+        // Point du jour aligné sur la jauge
+        $current = (float) ($ash['burnt_kg'] ?? $burnt);
+        $points[] = [$today, $pct($current)];
+
+        $forecast = [[$today, $pct($current)]];
+        $kg = $current;
+        for ($i = 1; $i <= 730 && $kg < $capacity; $i++) {
+            $d = CarbonImmutable::today()->addDays($i);
+            $kg += (float) ($this->signature->expectedDailyKg($d, $normals[$d->dayOfYear] ?? null) ?? 0);
+            if ($i % 3 === 0 || $kg >= $capacity) {
+                $forecast[] = [$d->format('Y-m-d'), $pct($kg)];
+            }
+        }
+
+        return [$points, $forecast];
     }
 }

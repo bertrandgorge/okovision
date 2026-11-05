@@ -46,6 +46,7 @@ const FORMATTERS = {
     '@kg': unit('kg'),
     '@kg2': unit('kg', nf2),
     '@pct': unit('%', nf1),
+    '@pctUpTo100': (v) => (v <= 100 ? `${v} %` : ''),
     '@kw': unit('kW'),
     '@kwh': unit('kWh'),
     '@min': unit('min', nf1),
