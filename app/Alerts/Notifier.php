@@ -45,11 +45,7 @@ class Notifier
                         ['type' => 'context', 'elements' => [['type' => 'mrkdwn', 'text' => "<{$url}|Okovision>"]]],
                     ],
                 ])->throw(),
-                ChannelType::Telegram => Http::timeout(10)->post('https://api.telegram.org/bot'.$c['bot_token'].'/sendMessage', [
-                    'chat_id' => $c['chat_id'],
-                    'text' => $text,
-                    'disable_web_page_preview' => true,
-                ])->throw(),
+                ChannelType::Telegram => $this->telegram($c, $text),
                 ChannelType::Webhook => $this->webhook($c, [
                     'title' => $title, 'message' => $message, 'severity' => $severity,
                     'context' => $context, 'sent_at' => now()->toIso8601String(), 'app' => $url,
@@ -59,10 +55,37 @@ class Notifier
 
             return ['channel' => $channel->name, 'ok' => true, 'error' => null, 'at' => now()->toIso8601String()];
         } catch (\Throwable $e) {
-            $channel->update(['last_error' => mb_substr($e->getMessage(), 0, 500)]);
+            $error = $this->redact($e->getMessage(), $c);
+            $channel->update(['last_error' => mb_substr($error, 0, 500)]);
 
-            return ['channel' => $channel->name, 'ok' => false, 'error' => $e->getMessage(), 'at' => now()->toIso8601String()];
+            return ['channel' => $channel->name, 'ok' => false, 'error' => $error, 'at' => now()->toIso8601String()];
         }
+    }
+
+    private function telegram(array $c, string $text): void
+    {
+        $response = Http::timeout(10)->post('https://api.telegram.org/bot'.$c['bot_token'].'/sendMessage', [
+            'chat_id' => $c['chat_id'],
+            'text' => $text,
+            'disable_web_page_preview' => true,
+        ]);
+
+        if (! $response->json('ok')) {
+            // Telegram renvoie un message explicite (« chat not found », « bots can't send messages to bots »…)
+            throw new \RuntimeException('Telegram : '.($response->json('description') ?? 'HTTP '.$response->status()));
+        }
+    }
+
+    /** Retire les secrets (jeton du bot, URL Slack) des messages d'erreur affichés et stockés. */
+    private function redact(string $message, array $c): string
+    {
+        foreach (['bot_token', 'webhook_url', 'secret'] as $key) {
+            if (! empty($c[$key])) {
+                $message = str_replace((string) $c[$key], '***', $message);
+            }
+        }
+
+        return $message;
     }
 
     private function webhook(array $c, array $payload): void
