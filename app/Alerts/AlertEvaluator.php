@@ -83,13 +83,22 @@ class AlertEvaluator
             }
             $rule->forceFill(['active' => true, 'last_triggered_at' => now()]);
 
+            $notified = false;
             if ($cooldownOver) {
-                $open->update(['deliveries' => array_merge($open->deliveries ?? [], $this->notifier->send($rule, $result->title, $result->message, $rule->severity, $result->context))]);
-                $rule->last_notified_at = now();
+                $deliveries = $this->notifier->send($rule, $result->title, $result->message, $rule->severity, $result->context);
+                if ($deliveries) {
+                    $open->update(['deliveries' => array_merge($open->deliveries ?? [], $deliveries)]);
+                }
+                // Le délai entre deux rappels ne démarre que si un message est réellement parti :
+                // sans canal (ou si tous échouent), un canal ajouté ou réparé notifie dès le passage suivant.
+                if (collect($deliveries)->contains('ok', true)) {
+                    $rule->last_notified_at = now();
+                    $notified = true;
+                }
             }
             $rule->save();
 
-            return "{$rule->name} : déclenchée".($cooldownOver ? ' (notifiée)' : '');
+            return "{$rule->name} : déclenchée".($notified ? ' (notifiée)' : '');
         }
 
         if ($open) {
