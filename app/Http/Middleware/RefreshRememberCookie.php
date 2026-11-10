@@ -34,7 +34,7 @@ class RefreshRememberCookie
         Cookie::queue(Cookie::make(
             $guard->getRecallerName(),
             $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$guard->hashPasswordForCookie($user->getAuthPassword()),
-            (int) config('auth.guards.web.remember', 576000),
+            (int) config('auth.guards.'.Filament::getAuthGuard().'.remember', 576000),
         ));
         $session->put('remember_refreshed_on', today()->toDateString());
 

@@ -16,7 +16,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
+        'guard' => env('AUTH_GUARD', 'okovision'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
@@ -38,7 +38,10 @@ return [
     */
 
     'guards' => [
-        'web' => [
+        // Nom propre à l'appli : le cookie « se souvenir de moi » s'appelle remember_<guard>_<sha1>. Avec « web »
+        // (identique dans toutes les applis Laravel), une autre appli servie sur localhost — les cookies ignorent
+        // le port — l'écrase avec un cookie chiffré par une autre clé, et on est déconnecté.
+        'okovision' => [
             'driver' => 'session',
             'provider' => 'users',
             // Durée du cookie « se souvenir de moi » (minutes) : 400 jours, le maximum accepté par les navigateurs.

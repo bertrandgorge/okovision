@@ -193,7 +193,7 @@ Le script fait `git pull --ff-only`, `composer install --no-dev`, passe en maint
 ## 6. Développement local
 
 ```bash
-docker compose up -d                 # app :8080, ancienne appli :8081, MariaDB :3306, DbGate :3000
+docker compose up -d                 # app :8080, ancienne appli :8081, MariaDB :3306, DbGate :3000, Mailpit :8025
 docker compose exec -u www-data app php artisan okovision:import-legacy
 docker compose exec -u www-data app php artisan test
 docker compose --profile scheduler up -d scheduler   # ordonnanceur

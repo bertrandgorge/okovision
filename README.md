@@ -21,7 +21,7 @@ Site de présentation, guide de réglage et guide d'installation : https://bertr
 - Ancienne application (pour référence) : `legacy/`
 
 ```bash
-docker compose up -d                     # http://localhost:8080 (nouvelle), :8081 (ancienne), DbGate :3000
+docker compose up -d                     # http://localhost:8080 (nouvelle), :8081 (ancienne), DbGate :3000, Mailpit :8025
 docker compose exec -u www-data app composer install
 docker compose exec -u www-data app npm ci && npm run build
 docker compose exec -u www-data app php artisan migrate --seed

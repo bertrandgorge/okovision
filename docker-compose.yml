@@ -83,6 +83,14 @@ services:
       db:
         condition: service_healthy
 
+  # Boîte mail de développement : tous les e-mails de l'appli (liens de connexion, alertes) arrivent ici.
+  # Interface web : http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+
 volumes:
   db_data:
   dbgate_data:

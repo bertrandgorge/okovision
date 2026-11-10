@@ -54,7 +54,7 @@ class MagicLinkTest extends TestCase
         $response->assertRedirect();
         $this->assertAuthenticatedAs($user);
 
-        $recaller = collect($response->headers->getCookies())->first(fn ($c) => str_starts_with($c->getName(), 'remember_web_'));
+        $recaller = collect($response->headers->getCookies())->first(fn ($c) => str_starts_with($c->getName(), 'remember_okovision_'));
         $this->assertNotNull($recaller, 'cookie « se souvenir de moi » absent');
         $this->assertGreaterThan(now()->addDays(399)->getTimestamp(), $recaller->getExpiresTime());
 
@@ -80,7 +80,7 @@ class MagicLinkTest extends TestCase
         $user = User::factory()->create(['remember_token' => 'abc']);
 
         $cookie = collect($this->actingAs($user)->get('/donnees')->assertOk()->headers->getCookies())
-            ->first(fn ($c) => str_starts_with($c->getName(), 'remember_web_'));
+            ->first(fn ($c) => str_starts_with($c->getName(), 'remember_okovision_'));
         $this->assertNotNull($cookie);
         $this->assertGreaterThan(now()->addDays(399)->getTimestamp(), $cookie->getExpiresTime());
     }

@@ -34,6 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Okovision')
             ->favicon(asset('favicon.svg'))
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->authGuard('okovision')
             ->login(MagicLinkLogin::class)
             ->profile(EditProfile::class)
             ->colors([
