@@ -49,8 +49,8 @@
         <a class="btn" href="reglage.html">Les principes de réglage</a>
       </div>
       <figure class="shot">
-        <img src="assets/img/dashboard.jpg" width="1600" height="1000" alt="Tableau de bord d'Okovision : températures, granulés du jour, silo, cendrier et courbes de la journée">
-        <figcaption>Le tableau de bord : état en direct, indicateurs du jour, niveau du silo et du cendrier, courbes de la journée.</figcaption>
+        <img src="assets/img/dashboard.jpg" width="1600" height="1000" alt="Tableau de bord d'Okovision : état de la chaudière, indicateurs du jour, silo, cendrier et journée choisie">
+        <figcaption>Le tableau de bord : état de la chaudière (et pourquoi le chauffage tourne ou non), indicateurs du jour, silo, cendrier, puis la journée choisie.</figcaption>
       </figure>
     </div>
   </section>
@@ -82,32 +82,59 @@
       <div class="feature">
         <div class="text">
           <h3>La journée minute par minute</h3>
-          <p>Températures (chaudière, départ, ECS, extérieur, ambiance), frise des états du brûleur et des pompes, combustion
-            (flamme, ventilateurs, vis). Les trois graphiques sont synchronisés et zoomables.</p>
+          <p>Sur le tableau de bord, choisissez un jour : températures (chaudière, départ, ECS, extérieur, ambiance) et, sur le même axe
+            horaire, la frise des états du brûleur et des pompes ; en dessous, la combustion (flamme, ventilateurs, vis). Tout est zoomable et synchronisé.</p>
           <ul>
             <li>Chaque cycle brûleur est détecté et coloré, en rouge pour un allumage à froid.</li>
-            <li>Synthèse du jour : granulés (dont eau chaude), cycles, temps de combustion, DJU.</li>
-            <li>Les mois archivés restent consultables : l'archive est relue à la volée.</li>
+            <li>L'encadré « État de la chaudière » explique en direct pourquoi le chauffage tourne ou est arrêté (limite de chauffe, thermostat d'ambiance, plage horaire) et quand il repartira.</li>
+            <li>Synthèse du jour : granulés (dont eau chaude), cycles, DJU. Les mois archivés restent consultables.</li>
           </ul>
         </div>
         <div>
-          <figure class="shot"><img src="assets/img/journee-temperatures.jpg" width="1584" height="764" loading="lazy" alt="Courbes de températures d'une journée d'hiver avec les cycles du brûleur"></figure>
-          <figure class="shot" style="margin-top:16px"><img src="assets/img/journee-combustion.jpg" width="1584" height="674" loading="lazy" alt="Graphique de combustion : température de flamme, ventilateurs et vis"></figure>
+          <figure class="shot"><img src="assets/img/journee-temperatures.jpg" width="1792" height="1378" loading="lazy" alt="Courbes de températures d'une journée d'hiver avec les cycles du brûleur et la frise des états du brûleur et des pompes"></figure>
+          <figure class="shot" style="margin-top:16px"><img src="assets/img/journee-combustion.jpg" width="1792" height="898" loading="lazy" alt="Graphique de combustion : température de flamme, ventilateurs et vis"></figure>
         </div>
       </div>
 
       <div class="feature reverse">
         <div class="text">
-          <h3>Éditeur visuel de la loi d'eau</h3>
-          <p>La courbe de chauffe se règle en faisant glisser deux poignées (à −5 °C et +15 °C extérieur) ou avec des curseurs.
-            Okovision utilise la formule exacte du régulateur, identifiée sur 12 ans de consignes.</p>
+          <h3>Comprendre quand et pourquoi le chauffage s'arrête</h3>
+          <p>La page <em>Chauffage</em> trace la journée avec les réglages en vigueur à chaque instant : la température extérieure moyennée
+            face aux <strong>limites de chauffe</strong>, la pièce face à sa consigne et au <strong>tunnel du thermostat</strong>
+            (arrêt au-dessus de consigne + hystérésis, relance 1 °C plus bas), les plages confort, le brûleur et les pompes.</p>
           <ul>
-            <li>Nuage des consignes réellement calculées par la chaudière, coloré selon l'écart d'ambiance (bleu : trop froid, rouge : trop chaud).</li>
-            <li><strong>Courbe apprise</strong> : la pente et le pied qui reproduisent les consignes réellement nécessaires.</li>
-            <li>Application directe à la chaudière.</li>
+            <li>On y voit tout de suite pourquoi le circulateur ne repart pas : pièce encore au-dessus du seuil de relance, ou temps trop doux.</li>
+            <li>Au survol d'une courbe, les réglages qui la gouvernent s'illuminent ; chaque réglage est expliqué, avec sa valeur conseillée.</li>
           </ul>
         </div>
-        <figure class="shot"><img src="assets/img/loi-d-eau.jpg" width="1600" height="1000" loading="lazy" alt="Éditeur de la loi d'eau avec poignées et nuage de consignes"></figure>
+        <figure class="shot"><img src="assets/img/chauffage-journee.jpg" width="1792" height="1554" loading="lazy" alt="Journée de chauffage : pièce, consigne et tunnel du thermostat, température extérieure et limites de chauffe, frise du brûleur et des pompes"></figure>
+      </div>
+
+      <div class="feature">
+        <div class="text">
+          <h3>Régler la loi d'eau</h3>
+          <p>La courbe de chauffe, calculée avec la formule exacte du régulateur (identifiée sur 12 ans de consignes), et à côté ses réglages :
+            pente, pied, influence de la sonde d'ambiance, départs mini et maxi.</p>
+          <ul>
+            <li>Nuage des consignes réellement calculées par la chaudière, coloré selon l'écart d'ambiance (bleu : trop froid, rouge : trop chaud).</li>
+            <li><strong>Courbe apprise</strong> : la pente et le pied qui annuleraient la correction permanente de la sonde d'ambiance.</li>
+            <li>Méthode de réglage pas à pas, et application directe à la chaudière.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img src="assets/img/loi-d-eau.jpg" width="1792" height="1520" loading="lazy" alt="Loi d'eau : courbe actuelle, nuage des consignes calculées et réglages pente, pied et influence de la sonde"></figure>
+      </div>
+
+      <div class="feature reverse">
+        <div class="text">
+          <h3>Eau chaude et légionelles</h3>
+          <p>La page <em>Eau chaude</em> trace le ballon jour par jour : température, plages horaires, consigne, T mini hors plages et seuil de relance,
+            avec les charges du brûleur et des pompes. Elle suit les <strong>désinfections</strong> (au moins 10 min à 60 °C) et le prochain cycle anti-légionelles.</p>
+          <ul>
+            <li>Réglages commentés : consigne, T mini, hystérésis, postfonctionnement (qui explique pourquoi le ballon dépasse la consigne), priorité, jour anti-légionelles.</li>
+            <li>Programmes de l'eau chaude et du bouclage, avec le délai de charge mesuré sur vos propres charges : combien de temps avant la douche faire commencer la plage.</li>
+          </ul>
+        </div>
+        <figure class="shot"><img src="assets/img/eau-chaude.jpg" width="1792" height="1378" loading="lazy" alt="Ballon d'eau chaude sur une journée de cycle anti-légionelles : température, consigne à 65 °C, plages et charges"></figure>
       </div>
 
       <div class="feature">
@@ -120,12 +147,12 @@
             <li>Pilotage expérimental « chauffage par blocs » qui utilise l'inertie de la maison (désactivé et en simulation par défaut).</li>
           </ul>
         </div>
-        <figure class="shot"><img src="assets/img/recommandations.jpg" width="1584" height="968" loading="lazy" alt="Recommandations : réduire la puissance paramétrée, installer un ballon tampon"></figure>
+        <figure class="shot"><img src="assets/img/recommandations.jpg" width="1792" height="1410" loading="lazy" alt="Recommandations : réduire la puissance paramétrée, installer un ballon tampon"></figure>
       </div>
 
       <div class="two-shots">
-        <figure class="shot"><img src="assets/img/besoin-puissance.jpg" width="774" height="704" loading="lazy" alt="Besoin de la maison comparé aux puissances minimale et nominale de la chaudière"><figcaption>Besoin de la maison et puissances de la chaudière : sous la ligne rouge, la chaudière ne peut que fonctionner par cycles.</figcaption></figure>
-        <figure class="shot"><img src="assets/img/signature.jpg" width="774" height="956" loading="lazy" alt="Signature énergétique : consommation par jour en fonction de la température extérieure"><figcaption>Signature énergétique par saison : déperditions de la maison et température de non-chauffage.</figcaption></figure>
+        <figure class="shot"><img src="assets/img/besoin-puissance.jpg" width="872" height="986" loading="lazy" alt="Besoin de la maison comparé aux puissances minimale et nominale de la chaudière"><figcaption>Besoin de la maison et puissances de la chaudière : sous la ligne rouge, la chaudière ne peut que fonctionner par cycles.</figcaption></figure>
+        <figure class="shot"><img src="assets/img/signature.jpg" width="872" height="1274" loading="lazy" alt="Signature énergétique : consommation par jour en fonction de la température extérieure"><figcaption>Signature énergétique par saison : déperditions de la maison et température de non-chauffage.</figcaption></figure>
       </div>
 
       <div class="feature reverse">
@@ -134,7 +161,7 @@
           <p>Consommation chauffage et eau chaude, cycles et allumages à froid, distribution des durées de cycle, et comparaison
             des saisons en kg, en euros, en DJU et en kg/DJU. Ce dernier indicateur permet de comparer une année à l'autre quelle que soit la météo.</p>
         </div>
-        <figure class="shot"><img src="assets/img/saisons.jpg" width="1584" height="1250" loading="lazy" alt="Comparaison mensuelle des saisons et tableau des consommations"></figure>
+        <figure class="shot"><img src="assets/img/saisons.jpg" width="1792" height="1840" loading="lazy" alt="Comparaison mensuelle des saisons et tableau des consommations"></figure>
       </div>
 
       <div class="feature">
@@ -158,7 +185,7 @@
           calculée sur les années précédentes. Il en déduit la <strong>date à laquelle le silo sera vide</strong>, pour commander à temps,
           et celle à laquelle le cendrier sera plein. Si le cendrier a dépassé sa capacité avant d'être vidé, ce débordement apparaît en rouge.</p>
       </div>
-      <figure class="shot" style="margin-top:16px"><img src="assets/img/silo-projection.jpg" width="1216" height="469" loading="lazy" alt="Graphique du stock de granulés et du remplissage du cendrier sur un an, avec leur projection jusqu'à l'épuisement du silo"><figcaption>Stock du silo (vert) et remplissage du cendrier (gris, débordement en rouge), puis leur projection en pointillés : ici, silo vide mi-février et cendrier plein fin décembre.</figcaption></figure>
+      <figure class="shot" style="margin-top:16px"><img src="assets/img/silo-projection.jpg" width="1792" height="978" loading="lazy" alt="Graphique du stock de granulés et du remplissage du cendrier sur un an, avec leur projection jusqu'à l'épuisement du silo"><figcaption>Stock du silo (vert) et remplissage du cendrier (gris, débordement en rouge), puis leur projection en pointillés : ici, silo vide mi-février et cendrier plein fin décembre.</figcaption></figure>
 
       <div class="prose" style="margin-top:32px">
         <h3>Comparer les lots de granulés</h3>
@@ -168,16 +195,18 @@
           toute la chaleur reste dans la chaudière. Sa montée en température, rapportée aux kilos brûlés, indique l'énergie réellement récupérée par kilo.
           Le résultat est un indice, 100 % correspondant au lot médian, affiché à côté du fournisseur de chaque livraison.</p>
       </div>
-      <figure class="shot" style="margin-top:16px"><img src="assets/img/silo-lots.jpg" width="1216" height="700" loading="lazy" alt="Tableau de calibration des lots de granulés : consommation, débit de la vis, kg par degré-jour et énergie relative"><figcaption>Chaque période entre deux niveaux connus : débit de la vis, consommation par degré-jour et énergie relative du lot.</figcaption></figure>
+      <figure class="shot" style="margin-top:16px"><img src="assets/img/silo-lots.jpg" width="1792" height="1496" loading="lazy" alt="Tableau de calibration des lots de granulés : consommation, débit de la vis, kg par degré-jour et énergie relative"><figcaption>Chaque période entre deux niveaux connus : débit de la vis, consommation par degré-jour et énergie relative du lot.</figcaption></figure>
 
       <div class="feature reverse">
         <div class="text">
           <h3>Tous les réglages de la chaudière</h3>
-          <p>Les 223 réglages connus sont décrits dans un catalogue : libellés FR/EN/DE, unités, bornes, aide, nom à l'écran du Touch.
-            Ils sont classés en <em>essentiels</em> et <em>avancés</em>, avec une recherche.</p>
+          <p>Les 223 réglages connus sont décrits dans un catalogue : libellés FR/EN/DE, unités, bornes, nom à l'écran du Touch.
+            Les plus importants portent une <strong>valeur conseillée, la valeur d'usine et une explication</strong> tirées du manuel ÖkoFEN,
+            avec un signal quand votre valeur sort du conseil.</p>
           <ul>
-            <li>Différences affichées avant l'écriture, valeur relue après, journal de chaque modification.</li>
-            <li>Profils de réglages, et relevé automatique chaque nuit pour garder l'historique des changements.</li>
+            <li>Pour chaque réglage : un bouton pour l'appliquer, un autre pour revenir à la valeur d'usine. Valeur relue après l'écriture, journal de chaque modification.</li>
+            <li>Programmes horaires (par jour ou identiques toute la semaine), programmes soirée et vacances.</li>
+            <li>Recommandations issues de la régulation : hystérésis d'ambiance, programme haché, limite de chauffe en réduit…</li>
           </ul>
         </div>
         <figure class="shot"><img src="assets/img/reglages.jpg" width="1600" height="1000" loading="lazy" alt="Liste des réglages de la chaudière avec plages et descriptions"></figure>

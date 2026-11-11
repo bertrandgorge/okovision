@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Régler sa chaudière à granulés – Okovision</title>
-<meta name="description" content="Principes de réglage d'une chaudière à granulés Okofen : loi d'eau, sonde d'ambiance, cycles courts, hystérésis, puissance, ballon tampon, eau chaude et légionelles. Avec sources.">
+<meta name="description" content="Principes de réglage d'une chaudière à granulés Okofen : loi d'eau, sonde d'ambiance, thermostat et limites de chauffe, programmes horaires, cycles courts, puissance, ballon tampon, eau chaude et légionelles. D'après le manuel ÖkoFEN et des mesures réelles.">
 <link rel="canonical" href="https://bertrandgorge.github.io/okovision/reglage.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Okovision">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Régler sa chaudière à granulés – Okovision">
-<meta property="og:description" content="Principes de réglage d'une chaudière à granulés Okofen : loi d'eau, sonde d'ambiance, cycles courts, hystérésis, puissance, ballon tampon, eau chaude et légionelles. Avec sources.">
+<meta property="og:description" content="Principes de réglage d'une chaudière à granulés Okofen : loi d'eau, sonde d'ambiance, thermostat et limites de chauffe, programmes horaires, cycles courts, puissance, ballon tampon, eau chaude et légionelles. D'après le manuel ÖkoFEN et des mesures réelles.">
 <meta property="og:url" content="https://bertrandgorge.github.io/okovision/reglage.html">
 <meta property="og:image" content="https://bertrandgorge.github.io/okovision/assets/og-image.jpg">
 <meta property="og:image:width" content="1200">
@@ -18,7 +18,7 @@
 <meta property="og:image:alt" content="Okovision : tableau de bord de suivi d'une chaudière à granulés Okofen">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Régler sa chaudière à granulés – Okovision">
-<meta name="twitter:description" content="Principes de réglage d'une chaudière à granulés Okofen : loi d'eau, sonde d'ambiance, cycles courts, hystérésis, puissance, ballon tampon, eau chaude et légionelles. Avec sources.">
+<meta name="twitter:description" content="Principes de réglage d'une chaudière à granulés Okofen : loi d'eau, sonde d'ambiance, thermostat et limites de chauffe, programmes horaires, cycles courts, puissance, ballon tampon, eau chaude et légionelles. D'après le manuel ÖkoFEN et des mesures réelles.">
 <meta name="twitter:image" content="https://bertrandgorge.github.io/okovision/assets/og-image.jpg">
 <meta name="theme-color" content="#ea6a0c">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -42,7 +42,8 @@
     <p class="eyebrow">Guide</p>
     <h1>Les principes de réglage d'une chaudière à granulés</h1>
     <p class="lead">Une chaudière à granulés est plus efficace et plus propre quand elle brûle longtemps à puissance stable.
-      Ce guide explique les réglages qui comptent : loi d'eau, sonde d'ambiance, cycles du brûleur, eau chaude.
+      Ce guide explique les réglages qui comptent : loi d'eau, sonde d'ambiance, ce qui arrête le chauffage, programmes horaires, cycles du brûleur, eau chaude.
+      Les règles du régulateur viennent du manuel ÖkoFEN du Pelletronic Touch, vérifiées sur les mesures d'une installation réelle.
       Les exemples portent sur le régulateur Okofen Pelletronic Touch, mais les principes valent pour la plupart des chaudières.</p>
   </div>
 
@@ -55,6 +56,8 @@
         <li><a href="#loi-d-eau">La loi d'eau</a></li>
         <li><a href="#methode">Méthode de réglage</a></li>
         <li><a href="#ambiance">Sonde d'ambiance</a></li>
+          <li><a href="#arret">Quand le chauffage s'arrête</a></li>
+          <li><a href="#programmes">Programmes horaires</a></li>
         <li><a href="#leviers">Limiter les cycles</a></li>
         <li><a href="#ecs">Eau chaude et légionelles</a></li>
         <li><a href="#entretien">Entretien</a></li>
@@ -79,7 +82,7 @@
           <tr><td>Post-combustion</td><td>Arrêt de la vis, puis ventilation pendant environ 15 minutes pour brûler les restes. Une partie de la chaleur du foyer part alors par la cheminée.</td></tr>
         </tbody>
       </table></div>
-      <figure class="shot"><img src="assets/img/journee-combustion.jpg" width="1584" height="674" loading="lazy" alt="Une journée d'hiver avec une vingtaine de cycles courts du brûleur">
+      <figure class="shot"><img src="assets/img/journee-combustion.jpg" width="1792" height="898" loading="lazy" alt="Une journée d'hiver avec une vingtaine de cycles courts du brûleur">
         <figcaption>Une journée d'hiver vue par Okovision : après la relance du matin, le brûleur enchaîne des cycles d'une vingtaine de minutes.</figcaption></figure>
 
       <h2 id="cycles">2. Pourquoi éviter les cycles courts</h2>
@@ -146,25 +149,38 @@
 
       <h2 id="methode">4. Méthode de réglage</h2>
       <ol class="steps">
-        <li><strong>Une seule modification par jour</strong>, par petits pas. La maison réagit lentement : il faut au moins 24 h pour juger un changement.</li>
+        <li><strong>Fixer d'abord la consigne confort</strong> : chaque degré de consigne décale toute la courbe de (1 + pente) °C.</li>
+          <li><strong>Une seule modification par jour</strong>, par petits pas. La maison réagit lentement : il faut au moins 24 h pour juger un changement.</li>
         <li><strong>Par temps doux (entre +5 et +15 °C), on règle le pied</strong> : pièce trop chaude, −2 à −5 °C ; pièce trop froide, +2 à +5 °C.</li>
         <li><strong>Par temps froid (sous +5 °C), on règle la pente</strong> : trop chaud, −0,1 à −0,2 ; trop froid, +0,1 à +0,2.</li>
-        <li>Pendant le réglage, réduire l'influence de la sonde d'ambiance pour voir l'effet de la courbe seule.</li>
+        <li><strong>Pendant le réglage, mettre l'influence de la sonde d'ambiance à 0</strong> : c'est elle qui masque les défauts de la courbe en ajoutant
+          ou retirant quelques degrés au départ. La pièce reflète alors la courbe seule. Relever l'hystérésis d'ambiance à 2–3 °C seulement si le thermostat
+          coupe le circulateur pendant l'essai (courbe trop haute). Une fois la pièce stable à la consigne, remettre l'influence à 2–3.</li>
         <li>Ouvrir en grand les robinets thermostatiques de la pièce de référence. Ils servent au réglage fin pièce par pièce, pas au réglage principal.</li>
         <li>Viser la <strong>température de départ la plus basse qui assure le confort</strong> : moins de pertes de distribution, une vanne mélangeuse moins sollicitée, une demande plus régulière.</li>
       </ol>
       <p>Un guide de SuisseEnergie estime qu'une courbe bien réglée économise 4 à 6 % d'énergie. Il recommande de régler une première fois par temps froid
         (un peu en dessous de 0 °C), puis par temps doux (un peu au-dessus de 10 °C).</p>
       <div class="tip">
-        <p>Dans Okovision, la page <em>Loi d'eau</em> affiche les consignes réellement calculées par la chaudière, colorées selon l'écart d'ambiance.
+        <p>Dans Okovision, la page <em>Chauffage</em> affiche les consignes réellement calculées par la chaudière, colorées selon l'écart d'ambiance.
           Elle propose une <strong>courbe apprise</strong> (pente et pied) qui reproduit les besoins observés, en tenant compte de la correction par la sonde d'ambiance.</p>
       </div>
-      <figure class="shot"><img src="assets/img/courbe-apprise.jpg" width="774" height="1058" loading="lazy" alt="Panneau « Courbe apprise » : pente 1,6, pied 33,8 °C et méthode de réglage" style="max-width:420px">
+      <figure class="shot"><img src="assets/img/courbe-apprise.jpg" width="872" height="924" loading="lazy" alt="Panneau « Courbe apprise » : pente et pied proposés d'après les consignes réellement calculées" style="max-width:420px">
       </figure>
 
       <h2 id="ambiance">5. La sonde d'ambiance</h2>
       <p>Avec une sonde d'ambiance, le paramètre <strong>influence</strong> corrige le départ selon l'écart entre la consigne et la température mesurée.
-        Avec une influence de 3, une pièce à 19 °C pour 20 °C de consigne ajoute 3 °C au départ.</p>
+        C'est un <strong>coefficient sans unité</strong> : des degrés de départ par degré d'écart, dans les deux sens. Avec une influence de 3, une pièce
+        à 19 °C pour 20 °C de consigne ajoute 3 °C au départ ; une pièce à 20,5 °C en retire 1,5 °C.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Influence</th><th>Effet</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>La sonde n'agit plus sur le départ (elle sert encore au thermostat, voir plus bas). À utiliser pendant le réglage de la loi d'eau.</td></tr>
+          <tr><td>1 (usine)</td><td>Correction douce, si la loi d'eau est déjà juste.</td></tr>
+          <tr><td>2–3</td><td>Correction franche, utile avec une sonde bien placée.</td></tr>
+          <tr><td>4–5</td><td>Risque d'oscillations : la pièce réagit avec plusieurs heures de retard.</td></tr>
+        </tbody>
+      </table></div>
       <p>La sonde doit seulement <strong>affiner</strong>. Si elle corrige beaucoup en permanence, c'est que la courbe est mal réglée.
         Sur l'installation d'exemple, la sonde ajoutait en moyenne +4,9 °C au départ par 0 °C extérieur : la pente était trop faible.
         Une courbe bien réglée laisse un écart proche de zéro.</p>
@@ -173,7 +189,58 @@
       <p>Avec des convecteurs à ailettes, peu inertes et dont la puissance dépend fortement de la température de l'eau, les pentes usuelles vont de 1,2 à 1,8.
         Un plancher chauffant demande une pente beaucoup plus faible.</p>
 
-      <h2 id="leviers">6. Limiter les cycles courts</h2>
+      <h2 id="arret">6. Quand le chauffage s'arrête : thermostat et limites de chauffe</h2>
+      <p>Même en pleine plage de confort, le circulateur peut rester arrêté pendant des heures. Deux règles du régulateur en décident,
+        et elles s'ajoutent : le chauffage ne tourne que si l'extérieur est sous la limite <em>et</em> la pièce sous son seuil de relance (manuel ÖkoFEN E1389FR, p. 21 et 23).</p>
+      <h3>Le thermostat d'ambiance (hystérésis d'ambiance)</h3>
+      <p>Avec une sonde d'ambiance, le circuit s'arrête quand la pièce dépasse <strong>consigne + hystérésis</strong>, et ne repart que
+        lorsqu'elle est redescendue <strong>1 °C sous ce seuil</strong>. Le tunnel garde toujours 1 °C de large ; l'hystérésis le déplace seulement.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Consigne 20 °C</th><th>Arrêt</th><th>Relance</th></tr></thead>
+        <tbody>
+          <tr><td>Hystérésis 0 (usine)</td><td>20,0 °C</td><td>19,0 °C</td></tr>
+          <tr><td>Hystérésis 1 °C</td><td>21,0 °C</td><td>20,0 °C</td></tr>
+          <tr><td>Hystérésis 1,5 °C</td><td>21,5 °C</td><td>20,5 °C</td></tr>
+        </tbody>
+      </table></div>
+      <p>À 0, l'hystérésis n'est pas « désactivée » : le circuit se coupe dès la consigne atteinte et attend que la pièce ait perdu un degré.
+        Le manuel ne la conseille à 0 qu'en cas de forts apports dans la pièce de la sonde (soleil, poêle) ; sinon, une valeur plus grande est recommandée.
+        Avec 1 à 1,5 °C, le thermostat ne coupe plus qu'exceptionnellement et c'est la loi d'eau, affinée par la sonde, qui tient la pièce.
+        Pour garder la même température moyenne, on baisse alors la consigne d'environ un demi-degré.</p>
+      <h3>Les limites de chauffe</h3>
+      <p>Indépendamment de la pièce, le circuit s'arrête quand la <strong>température extérieure moyennée</strong> dépasse la limite de la plage en cours
+        (confort ou réduit), et ne repart que <strong>2 °C en dessous</strong>. La moyenne glissante (60 min par exemple) évite de couper au moindre rayon de soleil sur la sonde.</p>
+      <p>Pour la limite de réduit, le guide d'entretien ÖkoFEN donne ces repères : il est souvent inutile de chauffer la nuit, puisque la maison est chaude
+        en début de nuit et que la chaudière redémarre de toute façon avant la plage de confort.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Habitat</th><th>Limite de réduit</th></tr></thead>
+        <tbody>
+          <tr><td>Fortement isolé, forte inertie</td><td>0 °C</td></tr>
+          <tr><td>Bien isolé</td><td>5 °C</td></tr>
+          <tr><td>Moyennement isolé</td><td>10 °C</td></tr>
+          <tr><td>Peu ou très peu isolé</td><td>14 °C</td></tr>
+        </tbody>
+      </table></div>
+      <div class="tip">
+        <p><strong>Exemple réel.</strong> Une coupure de 30 minutes ajoutée au programme (16:00–16:30) a basculé le circuit en réduit (consigne 18 °C, pièce à 19,6 °C : arrêt).
+          À 16:30, retour en confort à 20 °C avec une hystérésis à 0 : relance seulement sous 19 °C. La pièce est restée entre 19,2 et 19,6 °C, et le chauffage
+          ne s'est pas rallumé de la soirée ni de la nuit. Le programme soirée n'y pouvait rien : il ne fait que forcer le confort.</p>
+      </div>
+      <figure class="shot"><img src="assets/img/chauffage-journee.jpg" width="1792" height="1554" loading="lazy" alt="Journée de chauffage : la pièce reste au-dessus du seuil de relance après la coupure de 16:00, le circulateur ne repart pas">
+        <figcaption>Cette journée dans Okovision : à 16:00, le passage en réduit arrête la pompe (frise du bas) ; à 16:30, la pièce est au-dessus de la ligne de relance et le chauffage ne repart pas.</figcaption></figure>
+
+      <h2 id="programmes">7. Programmes horaires</h2>
+      <ul>
+        <li><strong>Ne pas hacher les plages</strong> de confort et de réduit (guide d'entretien ÖkoFEN). Chaque bascule peut couper le circuit, qui ne repart pas forcément,
+          et chaque relance coûte un démarrage du brûleur. Sur plancher chauffant, des plages d'au moins 6 h.</li>
+        <li><strong>Inutile d'avancer le début d'une plage</strong> : la durée d'anticipation fait démarrer la chauffe assez tôt pour être à la consigne à l'heure indiquée (manuel E1389FR, p. 23).
+          Si la maison est froide au réveil, allongez l'anticipation plutôt que la plage.</li>
+        <li><strong>Confort au plus 21 °C</strong> : chaque degré de plus coûte environ 7 % de granulés. Écart confort / réduit d'au plus 5 °C sur radiateurs, 2 °C sur plancher chauffant.</li>
+        <li>Le <strong>programme soirée</strong> force le confort jusqu'à une heure donnée puis revient seul au programme ; le <strong>programme vacances</strong> remplace
+          le programme par une température réduite entre deux dates, à faire finir 24 h avant le retour.</li>
+      </ul>
+
+      <h2 id="leviers">8. Limiter les cycles courts</h2>
       <p>Du plus simple au plus structurant :</p>
       <h3>Élargir l'hystérésis de redémarrage</h3>
       <p>Sans ballon tampon, la seule réserve d'énergie est l'eau de la chaudière. Avec une coupure à 80 °C et une hystérésis de 5 K, le brûleur redémarre dès 75 °C.
@@ -185,8 +252,11 @@
         La chaudière peut alors brûler en continu une grande partie de la saison. Ce réglage technicien se fait avec l'installateur,
         en vérifiant la puissance nécessaire par grand froid et pour la relance après un réduit de nuit.</p>
       <h3>Regrouper l'eau chaude</h3>
-      <p>Une charge d'eau chaude isolée provoque un cycle complet, surtout en été. Une hystérésis ECS plus large (10 K) et une ou deux plages horaires
-        alignées sur les heures de chauffage regroupent les besoins dans un même cycle.</p>
+      <p>Une charge d'eau chaude isolée provoque un cycle complet, avec un allumage à froid. Sur l'installation d'exemple, à mi-saison,
+        <strong>21 des 48 charges d'un mois</strong> ont démarré la chaudière pour le ballon seul, parfois pour quelques minutes de combustion.
+        Une hystérésis ECS plus large (10 K), des plages courtes calées sur le démarrage du chauffage, et une seule charge par jour les jours doux
+        regroupent les besoins dans les cycles du chauffage. Avec la priorité ECS sur « Arrêt », ballon et chauffage sont alimentés ensemble,
+        ce qui allonge les combustions.</p>
       <h3>Utiliser l'inertie de la maison</h3>
       <p>À mi-saison, on peut alterner de longues périodes de chauffe et des pauses, tant que l'ambiance reste dans une bande de confort.
         Les murs servent alors de stockage. Okovision propose ce pilotage « par blocs » en option expérimentale, désactivée et en simulation par défaut.</p>
@@ -195,10 +265,10 @@
         La règle usuelle est de <strong>25 à 50 L par kW</strong>. En Allemagne, les aides publiques aux chaudières à granulés exigent au moins 30 L par kW.
         Un ballon de 600 L chargé entre 60 et 80 °C stocke environ 14 kWh. L'investissement est réel (coût, place, pertes à bien isoler) :
         il se justifie surtout quand la chaudière est nettement surdimensionnée.</p>
-      <figure class="shot"><img src="assets/img/besoin-puissance.jpg" width="774" height="704" loading="lazy" alt="Besoin de la maison par température extérieure, comparé aux puissances de la chaudière" style="max-width:520px">
+      <figure class="shot"><img src="assets/img/besoin-puissance.jpg" width="872" height="986" loading="lazy" alt="Besoin de la maison par température extérieure, comparé aux puissances de la chaudière" style="max-width:520px">
         <figcaption>Le besoin moyen (orange) passe sous la puissance minimale (rouge) dès 9 °C extérieur : c'est la zone des cycles courts.</figcaption></figure>
 
-      <h2 id="ecs">7. Eau chaude sanitaire et légionelles</h2>
+      <h2 id="ecs">9. Eau chaude sanitaire et légionelles</h2>
       <p>Les légionelles se développent entre 25 et 45 °C environ. Une eau chaude stockée à 40 °C se situe dans cette plage. Les recommandations sanitaires françaises :</p>
       <ul>
         <li>Produire l'eau chaude à <strong>55 °C au moins</strong> en sortie de ballon, en permanence.</li>
@@ -206,9 +276,25 @@
           La fonction anti-légionelles du Touch le fait automatiquement, par exemple une fois par semaine.</li>
         <li>Limiter l'eau à <strong>50 °C aux points de puisage</strong> des salles de bains (mitigeur thermostatique) pour éviter les brûlures.</li>
       </ul>
-      <p>Une consigne plus haute stocke aussi plus d'énergie dans le ballon, ce qui espace les charges en été.</p>
+      <p>Une consigne plus haute stocke aussi plus d'énergie dans le ballon, ce qui espace les charges en été.
+        Le cycle anti-légionelles du Touch monte le ballon à <strong>65 °C</strong> le jour choisi (manuel E1389FR, p. 60).</p>
+      <h3>Comment la chaudière gère le ballon</h3>
+      <ul>
+        <li>Pendant une plage horaire, elle vise la <strong>consigne</strong> et relance une charge dès que le ballon passe sous <em>consigne − hystérésis</em>.
+          En dehors, elle ne recharge que sous la <strong>T mini</strong>, moins l'hystérésis : avec 30 °C et 10 K, le ballon peut descendre à 20 °C la nuit.</li>
+        <li>Contrairement au chauffage, <strong>il n'y a pas d'anticipation</strong> : la charge démarre au début de la plage, et le brûleur doit d'abord s'allumer.
+          Mesuré sur l'installation d'exemple : eau chaude environ 40 minutes après le début de plage (10 min chaudière chaude, plus d'une heure à froid).
+          Faites commencer la plage au moins trois quarts d'heure avant la première douche, et finir juste après la dernière, pour éviter une recharge inutile.</li>
+        <li>Le <strong>postfonctionnement</strong> laisse tourner la pompe du ballon après la charge (10 min par défaut) pour y vider la chaleur de la chaudière.
+          Sans ballon tampon, la chaudière est alors vers 80 °C : le ballon monte d'environ 9 K au-dessus de la consigne (61 °C pour 52 °C demandés).
+          C'est de l'énergie récupérée, et une désinfection gratuite ; un mitigeur thermostatique aux points de puisage limite le risque de brûlure.
+          Quand le chauffage tourne, 3 à 5 min suffisent : la chaleur résiduelle part dans les radiateurs.</li>
+        <li><strong>Priorité ECS</strong> sur « Marche » (usine) : le ballon d'abord, le chauffage coupé pendant la charge. Sur « Arrêt » : les deux ensemble.</li>
+      </ul>
+      <figure class="shot"><img src="assets/img/eau-chaude.jpg" width="1792" height="1378" loading="lazy" alt="Ballon d'eau chaude un jour de cycle anti-légionelles : consigne 65 °C pendant la plage, charges du ballon dans la frise">
+        <figcaption>Un jour de cycle anti-légionelles dans Okovision : consigne à 65 °C pendant la plage, seuil de relance 5 K plus bas, charges visibles dans la frise.</figcaption></figure>
 
-      <h2 id="entretien">8. Entretien</h2>
+      <h2 id="entretien">10. Entretien</h2>
       <ul>
         <li><strong>Entretien annuel</strong> par un professionnel : nettoyage, réglage de la combustion, contrôle.</li>
         <li><strong>Ramonage</strong> du conduit de fumée au moins une fois par an, parfois deux selon le règlement sanitaire départemental. Gardez le certificat.</li>
@@ -222,6 +308,18 @@
       </div>
 
       <h2 id="sources">Sources</h2>
+      <h3>Régulation ÖkoFEN Pelletronic Touch</h3>
+      <ul class="sources">
+        <li><span class="src-title">ÖkoFEN, « Manuel d'utilisation et d'installation Pelletronic Touch » (E1389FR, V2.00)</span> : modes, programmes, soirée et vacances,
+          courbe et limites de chauffe, anticipation, hystérésis d'ambiance, réglages ECS, règles système.
+          <a href="https://forums.futura-sciences.com/attachments/habitat-bioclimatique-isolation-chauffage/424788d1604928346-retours-dexperience-chaudieres-okofen-pelletronic-touch-compr.pdf">PDF</a>.</li>
+        <li><span class="src-title">ÖkoFEN, « Operating Manual AutoPellet PE(S)(K)(B) 10–56 », partie installateur (PE 567 USA 1.1)</span> :
+          <a href="https://www.maineenergysystems.com/wp-content/uploads/2015/11/TechnicianStartUpTouch.pdf">PDF</a>.</li>
+        <li><span class="src-title">ÖkoFEN France, « Guide pratique – Entretien annuel des chaudières PE(S)(K)(B) 8-56 »</span>, chapitre « Contrôles de la régulation » :
+          <a href="https://forums.futura-sciences.com/attachments/habitat-bioclimatique-isolation-chauffage/363141d1522074139-retours-dexperience-chaudieres-okofen-manuel_entretien-comparatif-touch.pdf">PDF</a>.</li>
+        <li><span class="src-title">Synthèse des règles de la régulation, avec les vérifications faites sur les mesures</span> :
+          <a href="https://github.com/bertrandgorge/okovision/blob/master/docs/REGULATION-OKOFEN.md">docs/REGULATION-OKOFEN.md</a>.</li>
+      </ul>
       <h3>Cycles, rendement et stockage</h3>
       <ul class="sources">
         <li><span class="src-title">Carlon E. et al., « Efficiency and operational behaviour of small-scale pellet boilers installed in residential buildings »</span>,
