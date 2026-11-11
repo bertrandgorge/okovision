@@ -66,7 +66,7 @@
         @if ($dayChart['empty'])
             <p class="text-sm text-gray-500">Aucune mesure pour cette journée.</p>
         @else
-            <x-echart id="dhw-day-{{ $date }}" :option="$dayChart['option']" height="420px" />
+            <x-echart id="dhw-day-{{ $date }}" :option="$dayChart['option']" height="520px" />
         @endif
     </x-filament::section>
 

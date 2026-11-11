@@ -48,6 +48,7 @@
                 <x-filament::icon :icon="$heating['running'] ? 'heroicon-o-fire' : 'heroicon-o-pause-circle'"
                     @class(['h-5 w-5 shrink-0', 'text-success-600' => $heating['running'], 'text-gray-500' => ! $heating['running']]) />
                 <div class="space-y-1">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">État de la chaudière</div>
                     <div class="font-medium">{{ $heating['headline'] }}</div>
                     @if ($heating['reasons'])
                         <ul class="list-disc ps-4 text-gray-600 dark:text-gray-300">
@@ -130,11 +131,8 @@
                 <p class="text-sm text-gray-500">Aucune mesure pour cette journée (ni en base, ni dans les archives).</p>
             </x-filament::section>
         @else
-            <x-filament::section heading="Températures" description="Zones colorées : cycles brûleur (rouge = allumage à froid). Molette pour zoomer, les trois graphiques sont synchronisés.">
-                <x-echart id="day-temp-{{ $date }}" :option="$dayCharts['temperatures']" height="380px" group="day" />
-            </x-filament::section>
-            <x-filament::section heading="États du brûleur et des pompes">
-                <x-echart id="day-states-{{ $date }}" :option="$dayCharts['states']" height="150px" group="day" />
+            <x-filament::section heading="Températures et états" description="En haut, les températures ; bandes : cycles du brûleur (rouge = allumage à froid). En bas, les états du brûleur et des pompes sur le même axe horaire. Molette pour zoomer : les deux graphiques de la journée sont synchronisés.">
+                <x-echart id="day-temp-{{ $date }}" :option="$dayCharts['temperatures']" height="540px" group="day" />
             </x-filament::section>
             <x-filament::section heading="Combustion" description="Le taux d'alimentation de la vis et la vitesse du ventilateur traduisent la puissance de modulation." collapsible>
                 <x-echart id="day-comb-{{ $date }}" :option="$dayCharts['combustion']" height="320px" group="day" />

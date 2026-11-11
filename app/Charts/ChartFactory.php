@@ -51,7 +51,7 @@ class ChartFactory
     }
 
     /**
-     * @return array{temperatures: array, combustion: array, states: array, empty: bool}
+     * @return array{temperatures: array, combustion: array, empty: bool}
      */
     public function day(string $date, ?array $rows = null): array
     {
@@ -61,8 +61,9 @@ class ChartFactory
         $setOrNull = fn (string $col) => fn ($r) => (float) $r->{$col} <= 8 ? null : (float) $r->{$col};
 
         $cycles = DB::table('burner_cycles')->where('day', $date)->orderBy('started_at')->get();
-        $areas = $cycles->map(fn ($c) => [
-            ['xAxis' => $c->started_at, 'itemStyle' => ['color' => $c->cold_start ? 'rgba(239,68,68,.08)' : 'rgba(245,158,11,.08)']],
+        // Cycles du brûleur en bandes verticales, rattachées à leur entrée de légende (clic = masquer)
+        $cycleAreas = fn (bool $cold) => $cycles->filter(fn ($c) => (bool) $c->cold_start === $cold)->map(fn ($c) => [
+            ['xAxis' => $c->started_at, 'itemStyle' => ['color' => $cold ? 'rgba(239,68,68,.10)' : 'rgba(245,158,11,.10)']],
             ['xAxis' => $c->ended_at],
         ])->values()->all();
 
@@ -75,13 +76,36 @@ class ChartFactory
             'lineStyle' => ['width' => 1.6, 'color' => $color], 'itemStyle' => ['color' => $color], 'connectNulls' => false,
         ], $extra);
 
+        $temperatureSeries = [
+            $line('T chaudière', $s('boiler_temp'), self::COLORS['boiler'], self::tag('chaudière', self::COLORS['boiler'])),
+            $line('T départ', $s('hc1_flow_temp'), self::COLORS['flow'], self::tag('départ', self::COLORS['flow'])),
+            $line('Consigne départ', $s('hc1_flow_set', $setOrNull('hc1_flow_set')), self::COLORS['flow_set'], ['lineStyle' => ['type' => 'dashed', 'width' => 1.2, 'color' => self::COLORS['flow_set']]]),
+            $line('T ECS', $s('dhw1_temp_on'), self::COLORS['dhw'], self::tag('ECS', self::COLORS['dhw'])),
+            $line('T extérieure', $s('outside_temp'), self::COLORS['outside'], ['yAxisIndex' => 1] + self::tag('extérieur', self::COLORS['outside'])),
+            $line('T ambiante', $s('hc1_room_temp'), self::COLORS['room'], ['yAxisIndex' => 1, 'lineStyle' => ['width' => 2.2, 'color' => self::COLORS['room']]] + self::tag('pièce', self::COLORS['room'])),
+            $line('Consigne ambiante', $s('hc1_room_set', $setOrNull('hc1_room_set')), self::COLORS['room_set'], ['yAxisIndex' => 1, 'step' => 'end', 'lineStyle' => ['type' => 'dashed', 'color' => self::COLORS['room_set']]]),
+            // séries sans courbe : seulement les bandes des cycles du brûleur
+            $line('Cycle brûleur', [[$date.' 00:00:00', null]], 'rgba(245,158,11,.5)', ['markArea' => ['silent' => true, 'data' => $cycleAreas(false)], 'tooltip' => ['show' => false]]),
+            $line('Allumage à froid', [[$date.' 00:00:00', null]], 'rgba(239,68,68,.5)', ['markArea' => ['silent' => true, 'data' => $cycleAreas(true)], 'tooltip' => ['show' => false]]),
+        ];
+        // la légende ne cite que les courbes qui ont des valeurs ce jour-là (les consignes sont vides circuit arrêté)
+        $shown = array_column(array_filter($temperatureSeries, fn ($serie) => isset($serie['markArea'])
+            ? $serie['markArea']['data'] !== []
+            : collect($serie['data'])->contains(fn ($p) => $p[1] !== null)), 'name');
+        $only = fn (array $names) => array_values(array_intersect($names, $shown));
+        $zone = fn (string $name, string $color) => ['name' => $name, 'icon' => 'rect', 'itemStyle' => ['color' => $color]];
+
         $temperatures = [
-            // deux rangées : eau (chaudière, départ, ECS) puis maison (extérieur, pièce)
+            // deux rangées : eau (chaudière, départ, ECS) et cycles du brûleur, puis maison (extérieur, pièce)
             'legend' => [
-                ['top' => 0, 'left' => 110, 'data' => ['T chaudière', 'T départ', 'Consigne départ', 'T ECS']],
-                ['top' => 22, 'left' => 110, 'data' => ['T extérieure', 'T ambiante', 'Consigne ambiante']],
+                ['top' => 0, 'left' => 124, 'data' => [
+                    ...$only(['T chaudière', 'T départ', 'Consigne départ', 'T ECS']),
+                    ...(in_array('Cycle brûleur', $shown, true) ? [$zone('Cycle brûleur', 'rgba(245,158,11,.35)')] : []),
+                    ...(in_array('Allumage à froid', $shown, true) ? [$zone('Allumage à froid', 'rgba(239,68,68,.35)')] : []),
+                ]],
+                ['top' => 22, 'left' => 124, 'data' => $only(['T extérieure', 'T ambiante', 'Consigne ambiante'])],
             ],
-            'grid' => ['left' => 110, 'right' => 150, 'top' => 70, 'bottom' => 56],
+            'grid' => ['left' => 124, 'right' => 150, 'top' => 70, 'bottom' => 56],
             'tooltip' => $tooltip,
             'xAxis' => $xAxis,
             'yAxis' => [
@@ -90,20 +114,12 @@ class ChartFactory
                 ['type' => 'value', 'name' => 'Ext. / ambiance °C', 'scale' => true, 'splitLine' => ['show' => false], 'minInterval' => 0.5, 'offset' => 86],
             ],
             'dataZoom' => $zoom,
-            'series' => [
-                $line('T chaudière', $s('boiler_temp'), self::COLORS['boiler'], ['markArea' => ['silent' => true, 'data' => $areas]] + self::tag('chaudière', self::COLORS['boiler'])),
-                $line('T départ', $s('hc1_flow_temp'), self::COLORS['flow'], self::tag('départ', self::COLORS['flow'])),
-                $line('Consigne départ', $s('hc1_flow_set', $setOrNull('hc1_flow_set')), self::COLORS['flow_set'], ['lineStyle' => ['type' => 'dashed', 'width' => 1.2, 'color' => self::COLORS['flow_set']]]),
-                $line('T ECS', $s('dhw1_temp_on'), self::COLORS['dhw'], self::tag('ECS', self::COLORS['dhw'])),
-                $line('T extérieure', $s('outside_temp'), self::COLORS['outside'], ['yAxisIndex' => 1] + self::tag('extérieur', self::COLORS['outside'])),
-                $line('T ambiante', $s('hc1_room_temp'), self::COLORS['room'], ['yAxisIndex' => 1, 'lineStyle' => ['width' => 2.2, 'color' => self::COLORS['room']]] + self::tag('pièce', self::COLORS['room'])),
-                $line('Consigne ambiante', $s('hc1_room_set', $setOrNull('hc1_room_set')), self::COLORS['room_set'], ['yAxisIndex' => 1, 'step' => 'end', 'lineStyle' => ['type' => 'dashed', 'color' => self::COLORS['room_set']]]),
-            ],
+            'series' => $temperatureSeries,
         ];
 
         $combustion = [
-            'legend' => ['top' => 0, 'left' => 110],
-            'grid' => ['left' => 110, 'right' => 150, 'top' => 52, 'bottom' => 56],
+            'legend' => ['top' => 0, 'left' => 124],
+            'grid' => ['left' => 124, 'right' => 150, 'top' => 52, 'bottom' => 56],
             'tooltip' => $tooltip,
             'xAxis' => $xAxis,
             'yAxis' => [
@@ -120,10 +136,13 @@ class ChartFactory
             ],
         ];
 
+        // États du brûleur et des pompes : panneau du bas du graphique des températures, même axe horaire
+        // (alignement et zoom identiques, quelle que soit la place prise par les noms en bout de courbe)
+        $temperatures = $this->withStates($temperatures, $rows, ['burner', 'hc_pump', 'dhw_pump']);
+
         return [
             'temperatures' => $temperatures,
             'combustion' => $combustion,
-            'states' => $this->states($rows, $date),
             'empty' => $rows === [],
         ];
     }
@@ -147,10 +166,17 @@ class ChartFactory
         ];
     }
 
-    /** Frise des états : brûleur (par phase), allumeur, pompe chauffage, pompe ECS. */
-    private function states(array $rows, string $date): array
+    /** Lignes de la frise des états : clé => libellé */
+    public const STATE_LANES = ['burner' => 'Brûleur', 'ignition' => 'Allumeur', 'hc_pump' => 'Pompe chauffage', 'dhw_pump' => 'Pompe ECS'];
+
+    /**
+     * Frise des états (brûleur par phase, allumeur, pompes), en segments [ligne, début, fin, libellé] colorés.
+     *
+     * @param  list<string>  $lanes  clés de STATE_LANES, dans l'ordre d'affichage
+     * @return array{lanes: list<string>, data: list<array>}
+     */
+    private function states(array $rows, array $lanes = ['burner', 'ignition', 'hc_pump', 'dhw_pump']): array
     {
-        $lanes = ['Brûleur', 'Allumeur', 'Pompe chauffage', 'Pompe ECS'];
         $data = [];
         $segment = function (int $lane, callable $key, callable $label, callable $color) use ($rows, &$data) {
             $cur = null;
@@ -172,24 +198,60 @@ class ChartFactory
             }
         };
 
-        $segment(0,
-            fn ($r) => $r->pe1_status !== null && in_array((int) $r->pe1_status, [0, 1, 2, 3, 4, 5, 7, 8, 9, 11], true) ? (int) $r->pe1_status : false,
-            fn ($k) => $this->catalog->statusLabel($k),
-            fn ($k) => self::STATUS_COLORS[$k] ?? '#999');
-        $segment(1, fn ($r) => (int) $r->pe1_motor_ignition === 1 ? 1 : false, fn () => 'Allumeur', fn () => '#ef4444');
-        $segment(2, fn ($r) => (int) $r->hc1_pump === 1 ? 1 : false, fn () => 'Pompe chauffage', fn () => self::COLORS['heating']);
-        $segment(3, fn ($r) => (int) $r->dhw1_pump === 1 ? 1 : false, fn () => 'Pompe ECS', fn () => self::COLORS['dhw']);
+        foreach (array_values($lanes) as $i => $lane) {
+            match ($lane) {
+                'burner' => $segment($i,
+                    fn ($r) => $r->pe1_status !== null && in_array((int) $r->pe1_status, [0, 1, 2, 3, 4, 5, 7, 8, 9, 11], true) ? (int) $r->pe1_status : false,
+                    fn ($k) => $this->catalog->statusLabel($k),
+                    fn ($k) => self::STATUS_COLORS[$k] ?? '#999'),
+                'ignition' => $segment($i, fn ($r) => (int) $r->pe1_motor_ignition === 1 ? 1 : false, fn () => 'Allumeur', fn () => '#ef4444'),
+                'hc_pump' => $segment($i, fn ($r) => (int) $r->hc1_pump === 1 ? 1 : false, fn () => 'Pompe chauffage', fn () => self::COLORS['heating']),
+                'dhw_pump' => $segment($i, fn ($r) => (int) $r->dhw1_pump === 1 ? 1 : false, fn () => 'Pompe ECS', fn () => self::COLORS['dhw']),
+            };
+        }
 
-        return [
-            'grid' => ['left' => 110, 'right' => 64, 'top' => 8, 'bottom' => 24],
-            'tooltip' => ['formatter' => '@ganttTooltip'],
-            'xAxis' => ['type' => 'time', 'min' => $date.' 00:00:00', 'max' => $date.' 23:59:59', 'axisLabel' => ['formatter' => '@hour']],
-            'yAxis' => ['type' => 'category', 'data' => $lanes, 'inverse' => true, 'splitLine' => ['show' => false]],
-            'dataZoom' => self::dayZoom(showSlider: false),
-            'series' => [[
-                'type' => 'custom', 'renderItem' => '@ganttRender', 'encode' => ['x' => [1, 2], 'y' => 0], 'data' => $data,
-            ]],
+        return ['lanes' => array_map(fn ($l) => self::STATE_LANES[$l], array_values($lanes)), 'data' => $data];
+    }
+
+    /**
+     * Ajoute la frise des états en panneau du bas d'un graphique de journée (une seule grille au départ) : même axe
+     * horaire, donc alignement et zoom identiques. Marge gauche élargie pour les libellés des lignes.
+     *
+     * @param  list<string>  $lanes  clés de STATE_LANES
+     */
+    private function withStates(array $option, array $rows, array $lanes, int $left = 124): array
+    {
+        $states = $this->states($rows, $lanes);
+        $grid = $option['grid'];
+        $height = 26 * count($lanes) + 8;
+        $option['grid'] = [
+            array_merge($grid, ['left' => $left, 'bottom' => $height + 84]),
+            ['left' => $left, 'right' => $grid['right'] ?? 24, 'height' => $height, 'bottom' => 44],
         ];
+        $xAxis = $option['xAxis'];
+        $option['xAxis'] = [['gridIndex' => 0, 'axisLabel' => ['show' => false]] + $xAxis, ['gridIndex' => 1] + $xAxis];
+        $yAxes = isset($option['yAxis'][0]) ? $option['yAxis'] : [$option['yAxis']];
+        $option['yAxis'] = [
+            ...array_map(fn ($y) => ['gridIndex' => 0] + $y, $yAxes),
+            ['gridIndex' => 1, 'type' => 'category', 'data' => $states['lanes'], 'inverse' => true, 'splitLine' => ['show' => false]],
+        ];
+        $option['axisPointer'] = ['link' => [['xAxisIndex' => 'all']]];
+        $option['dataZoom'] = array_map(fn ($z) => ['xAxisIndex' => [0, 1]] + $z, $option['dataZoom'] ?? self::dayZoom());
+        // légende automatique : on la fige sur les séries existantes, pour ne pas y voir la frise
+        if (isset($option['legend']) && ! isset($option['legend'][0]) && ! isset($option['legend']['data'])) {
+            $option['legend']['data'] = array_values(array_filter(array_column($option['series'], 'name')));
+        }
+        $option['series'][] = ['name' => 'États', 'type' => 'custom', 'renderItem' => '@ganttRender', 'encode' => ['x' => [1, 2], 'y' => 0],
+            'data' => $states['data'], 'xAxisIndex' => 1, 'yAxisIndex' => count($yAxes),
+            'tooltip' => ['trigger' => 'item', 'formatter' => '@ganttTooltip']];
+        // les légendes restent alignées sur la grille
+        if (isset($option['legend'])) {
+            $option['legend'] = isset($option['legend'][0])
+                ? array_map(fn ($l) => array_merge($l, ['left' => $left]), $option['legend'])
+                : array_merge($option['legend'], ['left' => $left]);
+        }
+
+        return $option;
     }
 
     // ------------------------------------------------------------------ Historique
@@ -453,27 +515,27 @@ class ChartFactory
         $step = fn (string $color, string $type = 'dashed', float $width = 1.6) => ['step' => 'end', 'lineStyle' => ['type' => $type, 'width' => $width, 'color' => $color]];
         $tag = self::tag(...);
 
-        return [
-            'empty' => $rows === [],
-            'option' => [
-                'legend' => ['top' => 0, 'left' => 48, 'itemWidth' => 28, 'itemHeight' => 10, 'itemGap' => 14, 'selected' => ['Seuil relevé par la chaudière' => false]],
-                'grid' => ['left' => 48, 'right' => 110, 'top' => 40, 'bottom' => 56],
-                'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@temp', 'axisPointer' => ['type' => 'cross', 'label' => ['precision' => 1]]],
-                'xAxis' => ['type' => 'time', 'min' => $date.' 00:00:00', 'max' => $end, 'axisLabel' => ['formatter' => '@hour']],
-                'yAxis' => ['type' => 'value', 'name' => '°C', 'scale' => true],
-                'dataZoom' => self::dayZoom(),
-                'series' => [
-                    $line('T ballon', $tank, self::COLORS['dhw'], [
-                        'lineStyle' => ['width' => 2.4, 'color' => self::COLORS['dhw']],
-                        'markArea' => ['silent' => true, 'data' => $areas],
-                    ] + $tag('ballon', self::COLORS['dhw'])),
-                    $line('Consigne', $set, '#ef4444', $step('#ef4444')),
-                    $line('T mini (hors plages)', $min, '#0ea5e9', $step('#0ea5e9') + $tag('T mini', '#0ea5e9')),
-                    $line('Seuil de relance (− hystérésis)', $relaunch, '#f59e0b', $step('#f59e0b', 'dotted') + $tag('relance', '#f59e0b')),
-                    $line('Seuil relevé par la chaudière', $measured, '#94a3b8', $step('#94a3b8', 'solid', 1)),
-                ],
+        $option = [
+            'legend' => ['top' => 0, 'left' => 48, 'itemWidth' => 28, 'itemHeight' => 10, 'itemGap' => 14, 'selected' => ['Seuil relevé par la chaudière' => false]],
+            'grid' => ['left' => 48, 'right' => 110, 'top' => 40, 'bottom' => 56],
+            'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@temp', 'axisPointer' => ['type' => 'cross', 'label' => ['precision' => 1]]],
+            'xAxis' => ['type' => 'time', 'min' => $date.' 00:00:00', 'max' => $end, 'axisLabel' => ['formatter' => '@hour']],
+            'yAxis' => ['type' => 'value', 'name' => '°C', 'scale' => true],
+            'dataZoom' => self::dayZoom(),
+            'series' => [
+                $line('T ballon', $tank, self::COLORS['dhw'], [
+                    'lineStyle' => ['width' => 2.4, 'color' => self::COLORS['dhw']],
+                    'markArea' => ['silent' => true, 'data' => $areas],
+                ] + $tag('ballon', self::COLORS['dhw'])),
+                $line('Consigne', $set, '#ef4444', $step('#ef4444')),
+                $line('T mini (hors plages)', $min, '#0ea5e9', $step('#0ea5e9') + $tag('T mini', '#0ea5e9')),
+                $line('Seuil de relance (− hystérésis)', $relaunch, '#f59e0b', $step('#f59e0b', 'dotted') + $tag('relance', '#f59e0b')),
+                $line('Seuil relevé par la chaudière', $measured, '#94a3b8', $step('#94a3b8', 'solid', 1)),
             ],
         ];
+
+        // états du brûleur et des pompes sous le graphique (pompe chauffage : charges en parallèle si priorité ECS sur Arrêt)
+        return ['empty' => $rows === [], 'option' => $this->withStates($option, $rows, ['burner', 'dhw_pump', 'hc_pump'])];
     }
 
     /** Consommation mensuelle comparée par saison de chauffe (septembre → août). */
@@ -788,42 +850,37 @@ class ChartFactory
         $zone = fn (string $name, string $color) => ['name' => $name, 'icon' => 'rect', 'itemStyle' => ['color' => $color]];
         $legend = fn (int $top, array $data) => ['top' => $top, 'left' => 52, 'data' => $data, 'itemWidth' => 28, 'itemHeight' => 10, 'itemGap' => 14];
 
-        return [
-            'empty' => $rows === [],
-            'option' => [
-                'legend' => [
-                    $legend(0, ['T ambiante', 'Consigne', 'Arrêt thermostat', 'Relance thermostat', $zone('Tunnel du thermostat', 'rgba(163,163,163,.45)'), $zone('Plage confort', 'rgba(16,185,129,.25)')]),
-                    $legend(22, ['T extérieure', 'T ext moyennée', 'Limite de chauffe', 'Relance limite', $zone('Pompe chauffage', 'rgba(245,158,11,.45)')]),
-                ],
-                'grid' => ['left' => 52, 'right' => 120, 'top' => 60, 'bottom' => 56],
-                'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@num', 'axisPointer' => ['type' => 'cross', 'label' => ['precision' => 1]]],
-                'xAxis' => ['type' => 'time', 'min' => $date.' 00:00:00', 'max' => $end, 'axisLabel' => ['formatter' => '@hour']],
-                // une seule échelle pour toutes les températures ; la pompe sur un axe caché (bandeau en bas)
-                'yAxis' => [
-                    ['type' => 'value', 'name' => '°C', 'scale' => true, 'minInterval' => 1],
-                    ['type' => 'value', 'min' => 0, 'max' => 12, 'show' => false],
-                ],
-                'dataZoom' => self::dayZoom(),
-                'series' => [
-                    // Pièce
-                    $line('T ambiante', $room, self::COLORS['room'], $roomKeys, ['lineStyle' => ['width' => 2.4, 'color' => self::COLORS['room']]] + $tag('pièce', self::COLORS['room'])),
-                    $line('Consigne', $set, '#047857', $roomKeys, $step('#047857', 'solid', 1.4) + $tag('consigne', '#047857')),
-                    $line('Relance thermostat', $restart, '#737373', ['hyst'], $step('#737373', 'dotted') + ['stack' => 'tunnel'] + $tag('relance', '#737373')),
-                    $line('Tunnel du thermostat', $band, '#a3a3a3', ['hyst'], ['step' => 'end', 'stack' => 'tunnel', 'lineStyle' => ['width' => 0],
-                        'areaStyle' => ['color' => 'rgba(163,163,163,.18)'], 'tooltip' => ['valueFormatter' => '@kelvin']]),
-                    $line('Arrêt thermostat', $stop, '#525252', ['hyst'], $step('#525252') + $tag('arrêt', '#525252')),
-                    // zones des plages confort, rattachées à leur entrée de légende (clic = masquer)
-                    $line('Plage confort', [[$date.' 00:00:00', null]], 'rgba(16,185,129,.25)', ['room_comfort'], ['markArea' => ['silent' => true, 'data' => $areas]]),
-                    $line('Pompe chauffage', $pump, '#f59e0b', ['hyst', ...$limitKeys], ['yAxisIndex' => 1, 'step' => 'end', 'sampling' => 'max',
-                        'lineStyle' => ['width' => 0], 'areaStyle' => ['opacity' => 0.25, 'color' => '#f59e0b']]),
-                    // Extérieur
-                    $line('T extérieure', $outside, self::COLORS['outside'], ['average'], ['lineStyle' => ['width' => 1, 'opacity' => 0.6, 'color' => self::COLORS['outside']]]),
-                    $line('T ext moyennée', $avg, '#0369a1', ['average', ...$limitKeys], ['lineStyle' => ['width' => 2.2, 'color' => '#0369a1']] + $tag('ext. moyenne', '#0369a1')),
-                    $line('Limite de chauffe', $limit, '#dc2626', $limitKeys, $step('#dc2626') + $tag('limite', '#dc2626')),
-                    $line('Relance limite', $limitRestart, '#f87171', $limitKeys, $step('#f87171', 'dotted') + $tag('relance limite', '#f87171')),
-                ],
+        $option = [
+            'legend' => [
+                $legend(0, ['T ambiante', 'Consigne', 'Arrêt thermostat', 'Relance thermostat', $zone('Tunnel du thermostat', 'rgba(163,163,163,.45)'), $zone('Plage confort', 'rgba(16,185,129,.25)')]),
+                $legend(22, ['T extérieure', 'T ext moyennée', 'Limite de chauffe', 'Relance limite']),
+            ],
+            'grid' => ['left' => 52, 'right' => 120, 'top' => 60, 'bottom' => 56],
+            'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@num', 'axisPointer' => ['type' => 'cross', 'label' => ['precision' => 1]]],
+            'xAxis' => ['type' => 'time', 'min' => $date.' 00:00:00', 'max' => $end, 'axisLabel' => ['formatter' => '@hour']],
+            // une seule échelle pour toutes les températures
+            'yAxis' => ['type' => 'value', 'name' => '°C', 'scale' => true, 'minInterval' => 1],
+            'dataZoom' => self::dayZoom(),
+            'series' => [
+                // Pièce
+                $line('T ambiante', $room, self::COLORS['room'], $roomKeys, ['lineStyle' => ['width' => 2.4, 'color' => self::COLORS['room']]] + $tag('pièce', self::COLORS['room'])),
+                $line('Consigne', $set, '#047857', $roomKeys, $step('#047857', 'solid', 1.4) + $tag('consigne', '#047857')),
+                $line('Relance thermostat', $restart, '#737373', ['hyst'], $step('#737373', 'dotted') + ['stack' => 'tunnel'] + $tag('relance', '#737373')),
+                $line('Tunnel du thermostat', $band, '#a3a3a3', ['hyst'], ['step' => 'end', 'stack' => 'tunnel', 'lineStyle' => ['width' => 0],
+                    'areaStyle' => ['color' => 'rgba(163,163,163,.18)'], 'tooltip' => ['valueFormatter' => '@kelvin']]),
+                $line('Arrêt thermostat', $stop, '#525252', ['hyst'], $step('#525252') + $tag('arrêt', '#525252')),
+                // zones des plages confort, rattachées à leur entrée de légende (clic = masquer)
+                $line('Plage confort', [[$date.' 00:00:00', null]], 'rgba(16,185,129,.25)', ['room_comfort'], ['markArea' => ['silent' => true, 'data' => $areas], 'tooltip' => ['show' => false]]),
+                // Extérieur
+                $line('T extérieure', $outside, self::COLORS['outside'], ['average'], ['lineStyle' => ['width' => 1, 'opacity' => 0.6, 'color' => self::COLORS['outside']]]),
+                $line('T ext moyennée', $avg, '#0369a1', ['average', ...$limitKeys], ['lineStyle' => ['width' => 2.2, 'color' => '#0369a1']] + $tag('ext. moyenne', '#0369a1')),
+                $line('Limite de chauffe', $limit, '#dc2626', $limitKeys, $step('#dc2626') + $tag('limite', '#dc2626')),
+                $line('Relance limite', $limitRestart, '#f87171', $limitKeys, $step('#f87171', 'dotted') + $tag('relance limite', '#f87171')),
             ],
         ];
+
+        // états du brûleur et des pompes sous le graphique (la pompe ECS montre les charges du ballon)
+        return ['empty' => $rows === [], 'option' => $this->withStates($option, $rows, ['burner', 'hc_pump', 'dhw_pump'])];
     }
 
     // ------------------------------------------------------------------ Silo

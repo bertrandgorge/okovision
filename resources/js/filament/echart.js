@@ -111,6 +111,8 @@ function baseOption(dark) {
     const line = dark ? '#3f3f46' : '#e4e4e7'
     return {
         backgroundColor: 'transparent',
+        // aucune animation : une courbe réaffichée via la légende rejouerait sinon son animation d'apparition
+        animation: false,
         textStyle: { fontFamily: 'inherit', color: text },
         color: ['#f59e0b', '#3b82f6', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#eab308'],
         legend: { textStyle: { color: text } },
