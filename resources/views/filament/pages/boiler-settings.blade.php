@@ -28,6 +28,13 @@
         <div wire:loading><x-filament::loading-indicator class="h-5 w-5" /></div>
     </div>
 
+    <div class="flex flex-wrap items-center gap-x-1 rounded-xl bg-gray-50 p-3 text-sm text-gray-600 ring-1 ring-gray-950/5 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">
+        Les réglages du circuit de chauffage (loi d'eau, consignes, limites) sont sur la page
+        <x-filament::link :href="\App\Filament\Pages\HeatingCurvePage::getUrl()">Chauffage</x-filament::link>,
+        ceux de l'eau chaude sur la page <x-filament::link :href="\App\Filament\Pages\HotWaterPage::getUrl()">Eau chaude</x-filament::link>,
+        les programmes soirée et vacances sur <x-filament::link :href="\App\Filament\Pages\TimePrograms::getUrl()">Programmes horaires</x-filament::link>.
+    </div>
+
     @if ($level === 'expert')
         <div class="rounded-xl bg-warning-50 p-3 text-sm text-warning-800 ring-1 ring-warning-200 dark:bg-warning-950/40 dark:text-warning-200 dark:ring-warning-800">
             Réglages de combustion et de sécurité normalement réservés au technicien Okofen. Une valeur inadaptée peut dégrader la combustion ou mettre la chaudière en défaut.
@@ -81,6 +88,7 @@
                             @endif
                             @if ($min !== null && $max !== null && ! $options) plage {{ $min }} – {{ $max }} {{ $unit }}<br> @endif
                             {{ $p['description'] ?? '' }}
+                            <x-param-advice :param="$p" :value="$edit[$k] ?? $values[$k] ?? null" />
                         </div>
                     </div>
                 @endforeach

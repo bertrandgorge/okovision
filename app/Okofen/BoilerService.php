@@ -40,6 +40,9 @@ class BoilerService
     {
         if ($fresh) {
             Cache::forget(self::LIVE_CACHE);
+            foreach (array_keys(TimeProgram::CIRCUITS) as $circuit) {
+                Cache::forget(TimeProgram::windowsCacheKey($circuit));
+            }
         }
 
         return Cache::remember(self::LIVE_CACHE, 60, function () {

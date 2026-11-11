@@ -5,8 +5,12 @@ namespace App\Charts;
 use App\Analysis\DayAggregator;
 use App\Analysis\EnergySignature;
 use App\Analysis\HeatingCurve;
+use App\Analysis\HotWater;
+use App\Analysis\PelletCalibration;
 use App\Archive\MeasurementArchiver;
 use App\Okofen\Catalog;
+use App\Okofen\SettingsHistory;
+use App\Okofen\TimeProgram;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -72,42 +76,47 @@ class ChartFactory
         ], $extra);
 
         $temperatures = [
-            'legend' => ['top' => 0, 'type' => 'scroll'],
-            'grid' => ['left' => 110, 'right' => 64, 'top' => 36, 'bottom' => 56],
+            // deux rangées : eau (chaudière, départ, ECS) puis maison (extérieur, pièce)
+            'legend' => [
+                ['top' => 0, 'left' => 110, 'data' => ['T chaudière', 'T départ', 'Consigne départ', 'T ECS']],
+                ['top' => 22, 'left' => 110, 'data' => ['T extérieure', 'T ambiante', 'Consigne ambiante']],
+            ],
+            'grid' => ['left' => 110, 'right' => 150, 'top' => 70, 'bottom' => 56],
             'tooltip' => $tooltip,
             'xAxis' => $xAxis,
             'yAxis' => [
                 ['type' => 'value', 'name' => '°C', 'scale' => true],
-                ['type' => 'value', 'name' => 'Ext. / ambiance °C', 'scale' => true, 'splitLine' => ['show' => false], 'minInterval' => 0.5],
+                // axe de droite écarté de la grille : place pour les noms en bout de courbe
+                ['type' => 'value', 'name' => 'Ext. / ambiance °C', 'scale' => true, 'splitLine' => ['show' => false], 'minInterval' => 0.5, 'offset' => 86],
             ],
             'dataZoom' => $zoom,
             'series' => [
-                $line('T chaudière', $s('boiler_temp'), self::COLORS['boiler'], ['markArea' => ['silent' => true, 'data' => $areas]]),
-                $line('T départ', $s('hc1_flow_temp'), self::COLORS['flow']),
+                $line('T chaudière', $s('boiler_temp'), self::COLORS['boiler'], ['markArea' => ['silent' => true, 'data' => $areas]] + self::tag('chaudière', self::COLORS['boiler'])),
+                $line('T départ', $s('hc1_flow_temp'), self::COLORS['flow'], self::tag('départ', self::COLORS['flow'])),
                 $line('Consigne départ', $s('hc1_flow_set', $setOrNull('hc1_flow_set')), self::COLORS['flow_set'], ['lineStyle' => ['type' => 'dashed', 'width' => 1.2, 'color' => self::COLORS['flow_set']]]),
-                $line('T ECS', $s('dhw1_temp_on'), self::COLORS['dhw']),
-                $line('T extérieure', $s('outside_temp'), self::COLORS['outside'], ['yAxisIndex' => 1]),
-                $line('T ambiante', $s('hc1_room_temp'), self::COLORS['room'], ['yAxisIndex' => 1, 'lineStyle' => ['width' => 2.2, 'color' => self::COLORS['room']]]),
+                $line('T ECS', $s('dhw1_temp_on'), self::COLORS['dhw'], self::tag('ECS', self::COLORS['dhw'])),
+                $line('T extérieure', $s('outside_temp'), self::COLORS['outside'], ['yAxisIndex' => 1] + self::tag('extérieur', self::COLORS['outside'])),
+                $line('T ambiante', $s('hc1_room_temp'), self::COLORS['room'], ['yAxisIndex' => 1, 'lineStyle' => ['width' => 2.2, 'color' => self::COLORS['room']]] + self::tag('pièce', self::COLORS['room'])),
                 $line('Consigne ambiante', $s('hc1_room_set', $setOrNull('hc1_room_set')), self::COLORS['room_set'], ['yAxisIndex' => 1, 'step' => 'end', 'lineStyle' => ['type' => 'dashed', 'color' => self::COLORS['room_set']]]),
             ],
         ];
 
         $combustion = [
-            'legend' => ['top' => 0],
-            'grid' => ['left' => 110, 'right' => 64, 'top' => 36, 'bottom' => 56],
+            'legend' => ['top' => 0, 'left' => 110],
+            'grid' => ['left' => 110, 'right' => 150, 'top' => 52, 'bottom' => 56],
             'tooltip' => $tooltip,
             'xAxis' => $xAxis,
             'yAxis' => [
                 ['type' => 'value', 'name' => 'T flamme °C', 'min' => 0],
-                ['type' => 'value', 'name' => '%', 'min' => 0, 'max' => 100, 'splitLine' => ['show' => false]],
+                ['type' => 'value', 'name' => '%', 'min' => 0, 'max' => 100, 'splitLine' => ['show' => false], 'offset' => 86],
             ],
             'dataZoom' => $zoom,
             'series' => [
-                $line('T flamme', $s('pe1_flame_temp'), self::COLORS['flame'], ['areaStyle' => ['opacity' => 0.12, 'color' => self::COLORS['flame']]]),
+                $line('T flamme', $s('pe1_flame_temp'), self::COLORS['flame'], ['areaStyle' => ['opacity' => 0.12, 'color' => self::COLORS['flame']]] + self::tag('flamme', self::COLORS['flame'])),
                 $line('Consigne flamme', $s('pe1_flame_set', $setOrNull('pe1_flame_set')), '#fdba74', ['lineStyle' => ['type' => 'dashed', 'color' => '#fdba74']]),
-                $line('Ventilateur combustion', $s('pe1_fan'), self::COLORS['fan'], ['yAxisIndex' => 1]),
-                $line('Extracteur fumées', $s('pe1_flue_fan'), self::COLORS['flue'], ['yAxisIndex' => 1, 'lineStyle' => ['width' => 1, 'type' => 'dotted', 'color' => self::COLORS['flue']]]),
-                $line('Alimentation vis', $s('pe1_auger_run', fn ($r) => round(DayAggregator::augerRatio($r) * 100, 1)), self::COLORS['auger'], ['yAxisIndex' => 1, 'step' => 'end']),
+                $line('Ventilateur combustion', $s('pe1_fan'), self::COLORS['fan'], ['yAxisIndex' => 1] + self::tag('ventilateur', self::COLORS['fan'])),
+                $line('Extracteur fumées', $s('pe1_flue_fan'), self::COLORS['flue'], ['yAxisIndex' => 1, 'lineStyle' => ['width' => 1, 'type' => 'dotted', 'color' => self::COLORS['flue']]] + self::tag('extracteur', self::COLORS['flue'])),
+                $line('Alimentation vis', $s('pe1_auger_run', fn ($r) => round(DayAggregator::augerRatio($r) * 100, 1)), self::COLORS['auger'], ['yAxisIndex' => 1, 'step' => 'end'] + self::tag('vis', self::COLORS['auger'])),
             ],
         ];
 
@@ -117,6 +126,16 @@ class ChartFactory
             'states' => $this->states($rows, $date),
             'empty' => $rows === [],
         ];
+    }
+
+    /**
+     * Nom de la courbe au bout de la ligne, dans sa couleur ; les étiquettes qui se chevauchent sont décalées.
+     * Prévoir la place à droite de la grille (et décaler un éventuel axe de droite avec « offset »).
+     */
+    public static function tag(string $text, string $color): array
+    {
+        return ['endLabel' => ['show' => true, 'formatter' => $text, 'color' => $color, 'fontSize' => 11, 'distance' => 6],
+            'labelLayout' => ['moveOverlap' => 'shiftY']];
     }
 
     /** Zoom horizontal commun aux graphiques d'une journée (molette + réglette). */
@@ -354,6 +373,109 @@ class ChartFactory
         ];
     }
 
+    // ------------------------------------------------------------------ Eau chaude
+
+    /**
+     * Ballon d'eau chaude sur une journée, avec les réglages en vigueur minute par minute (journal des modifications) :
+     * - pendant les plages du programme ECS, la chaudière vise la consigne (≈ 65 °C le jour anti-légionelles) ;
+     * - hors plages, elle ne vise que la température mini ;
+     * - une charge démarre quand le ballon passe sous la cible moins l'hystérésis (seuil de relance).
+     * La série « Seuil relevé » (dhw1_set, masquée par défaut) est ce seuil tel que la chaudière le rapporte :
+     * cible − hystérésis au repos, cible pendant une charge.
+     *
+     * @param  array<int, list<array{0: int, 1: int}>>|null  $windows  programme actuel, en repli
+     */
+    public function dhwDay(string $date, SettingsHistory $history, ?array $windows): array
+    {
+        $rows = $this->dayRows($date);
+        $day = CarbonImmutable::parse($date);
+        $p = fn (string $k) => 'CAPPL:LOCAL.ww[0].'.$k;
+
+        // Réglages minute par minute (seulement là où ils changent)
+        $set = $min = $relaunch = [];
+        $areas = [];
+        $start = null;
+        $last = null;
+        $programs = [];
+        for ($m = 0; $m <= 1440; $m++) {
+            $ts = $day->addMinutes(min($m, 1439))->format('Y-m-d H:i:s');
+            if ($m === 1440) {
+                $in = false;
+            } else {
+                $active = (int) ($history->valueAt(TimeProgram::activeVariable('ww'), $ts) ?? 0);
+                $summary = $history->valueAt($p("zeitprogramm[{$active}]"), $ts);
+                $slots = ($programs[$summary ?? ''] ??= TimeProgram::parseSummary($summary)) ?? $windows;
+                $minute = $m;
+                $in = $slots === null || collect($slots[$day->dayOfWeek] ?? [])->contains(fn ($w) => $minute >= $w[0] && $minute < $w[1]);
+                $legio = $history->valueAt($p('legionellen_wochentag'), $ts);
+                $target = $in
+                    ? ($legio !== null && (int) $legio === $day->dayOfWeek ? HotWater::LEGIONELLA_TEMP : (float) $history->valueAt($p('temp_heizen'), $ts))
+                    : (float) $history->valueAt($p('temp_absenken'), $ts);
+                $hyst = (float) $history->valueAt($p('hysterese'), $ts);
+                $state = [$in, $target, $hyst];
+                if ($state !== $last) {
+                    $set[] = [$ts, $in ? $target : null];
+                    $min[] = [$ts, $in ? null : $target];
+                    $relaunch[] = [$ts, $target - $hyst];
+                    $last = $state;
+                }
+            }
+            if ($in && $start === null) {
+                $start = $ts;
+            } elseif (! $in && $start !== null) {
+                $areas[] = [['xAxis' => $start, 'itemStyle' => ['color' => 'rgba(139,92,246,.10)']], ['xAxis' => $ts]];
+                $start = null;
+            }
+        }
+        $end = $date.' 23:59:59';
+        foreach ([&$set, &$min, &$relaunch] as &$serie) {
+            $serie[] = [$end, end($serie)[1]];
+        }
+        unset($serie);
+
+        // Mesures, coupées sur les trous de plus de 20 min
+        $tank = $measured = [];
+        $prev = null;
+        foreach ($rows as $r) {
+            $t = strtotime($r->ts);
+            if ($prev !== null && $t - $prev > 1200) {
+                $tank[] = $measured[] = [date('Y-m-d H:i:s', $prev + 60), null];
+            }
+            $prev = $t;
+            $tank[] = [$r->ts, $r->dhw1_temp_on === null ? null : (float) $r->dhw1_temp_on];
+            $measured[] = [$r->ts, $r->dhw1_set === null ? null : (float) $r->dhw1_set];
+        }
+
+        $line = fn (string $name, array $data, string $color, array $extra = []) => array_merge([
+            'name' => $name, 'type' => 'line', 'data' => $data, 'symbol' => 'none', 'connectNulls' => false,
+            'lineStyle' => ['width' => 1.6, 'color' => $color], 'itemStyle' => ['color' => $color],
+        ], $extra);
+        $step = fn (string $color, string $type = 'dashed', float $width = 1.6) => ['step' => 'end', 'lineStyle' => ['type' => $type, 'width' => $width, 'color' => $color]];
+        $tag = self::tag(...);
+
+        return [
+            'empty' => $rows === [],
+            'option' => [
+                'legend' => ['top' => 0, 'left' => 48, 'itemWidth' => 28, 'itemHeight' => 10, 'itemGap' => 14, 'selected' => ['Seuil relevé par la chaudière' => false]],
+                'grid' => ['left' => 48, 'right' => 110, 'top' => 40, 'bottom' => 56],
+                'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@temp', 'axisPointer' => ['type' => 'cross', 'label' => ['precision' => 1]]],
+                'xAxis' => ['type' => 'time', 'min' => $date.' 00:00:00', 'max' => $end, 'axisLabel' => ['formatter' => '@hour']],
+                'yAxis' => ['type' => 'value', 'name' => '°C', 'scale' => true],
+                'dataZoom' => self::dayZoom(),
+                'series' => [
+                    $line('T ballon', $tank, self::COLORS['dhw'], [
+                        'lineStyle' => ['width' => 2.4, 'color' => self::COLORS['dhw']],
+                        'markArea' => ['silent' => true, 'data' => $areas],
+                    ] + $tag('ballon', self::COLORS['dhw'])),
+                    $line('Consigne', $set, '#ef4444', $step('#ef4444')),
+                    $line('T mini (hors plages)', $min, '#0ea5e9', $step('#0ea5e9') + $tag('T mini', '#0ea5e9')),
+                    $line('Seuil de relance (− hystérésis)', $relaunch, '#f59e0b', $step('#f59e0b', 'dotted') + $tag('relance', '#f59e0b')),
+                    $line('Seuil relevé par la chaudière', $measured, '#94a3b8', $step('#94a3b8', 'solid', 1)),
+                ],
+            ],
+        ];
+    }
+
     /** Consommation mensuelle comparée par saison de chauffe (septembre → août). */
     public function seasonsMonthly(int $seasons = 5): array
     {
@@ -472,37 +594,52 @@ class ChartFactory
 
     // ------------------------------------------------------------------ Loi d'eau
 
-    public function curve(HeatingCurve $current, ?HeatingCurve $edited, array $scatter, array $buckets, ?array $handles): array
+    /**
+     * Loi d'eau : courbes actuelle / modifiée (confort et réduit), consignes réellement calculées (mesures) et moyenne par
+     * °C extérieur. Chaque série porte « oko » : les réglages à mettre en exergue au survol.
+     */
+    public function curve(HeatingCurve $current, ?HeatingCurve $edited, array $scatter, array $buckets): array
     {
+        $comfortKeys = ['slope', 'foot', 'room_comfort', 'flow_min', 'flow_max'];
+        $reducedKeys = ['slope', 'foot', 'room_reduced', 'flow_min', 'flow_max'];
+        $line = fn (string $id, string $name, array $data, array $style, array $oko, int $z) => [
+            'id' => $id, 'name' => $name, 'type' => 'line', 'data' => $data, 'showSymbol' => false, 'triggerEvent' => true,
+            'lineStyle' => $style, 'itemStyle' => ['color' => $style['color']], 'z' => $z, 'oko' => $oko,
+        ];
+        $limits = fn (HeatingCurve $c, string $color) => ['silent' => false, 'symbol' => 'none', 'data' => [
+            ['xAxis' => $c->limitComfort, 'oko' => ['limit_comfort'], 'lineStyle' => ['color' => $color, 'type' => 'dashed'],
+                'label' => ['formatter' => 'limite confort', 'position' => 'insideEndTop', 'color' => $color]],
+            ['xAxis' => $c->limitReduced, 'oko' => ['limit_reduced'], 'lineStyle' => ['color' => $color, 'type' => 'dotted'],
+                'label' => ['formatter' => 'limite réduit', 'position' => 'insideEndBottom', 'color' => $color]],
+        ]];
+
         $series = [
-            ['id' => 'current', 'name' => 'Courbe actuelle (confort)', 'type' => 'line', 'data' => $current->series(), 'showSymbol' => false,
-                'lineStyle' => ['width' => 2.5, 'color' => '#64748b'], 'itemStyle' => ['color' => '#64748b'], 'z' => 3],
-            ['id' => 'current_reduced', 'name' => 'Courbe actuelle (réduit)', 'type' => 'line', 'data' => $current->series(true), 'showSymbol' => false,
-                'lineStyle' => ['width' => 1.5, 'type' => 'dotted', 'color' => '#64748b'], 'itemStyle' => ['color' => '#64748b'], 'z' => 3],
+            $line('current', 'Courbe actuelle (confort)', $current->series(), ['width' => 2.5, 'color' => '#64748b'], $comfortKeys, 3)
+                + ['markLine' => $limits($edited ?? $current, '#94a3b8')],
+            $line('current_reduced', 'Courbe actuelle (réduit)', $current->series(true), ['width' => 1.5, 'type' => 'dotted', 'color' => '#64748b'], $reducedKeys, 3),
         ];
         if ($edited) {
-            $series[] = ['id' => 'edited', 'name' => 'Nouvelle courbe (confort)', 'type' => 'line', 'data' => $edited->series(), 'showSymbol' => false,
-                'lineStyle' => ['width' => 3, 'color' => '#f97316'], 'itemStyle' => ['color' => '#f97316'], 'z' => 4];
-            $series[] = ['id' => 'edited_reduced', 'name' => 'Nouvelle courbe (réduit)', 'type' => 'line', 'data' => $edited->series(true), 'showSymbol' => false,
-                'lineStyle' => ['width' => 1.5, 'type' => 'dotted', 'color' => '#f97316'], 'itemStyle' => ['color' => '#f97316'], 'z' => 4];
+            $series[] = $line('edited', 'Nouvelle courbe (confort)', $edited->series(), ['width' => 3, 'color' => '#f97316'], $comfortKeys, 4);
+            $series[] = $line('edited_reduced', 'Nouvelle courbe (réduit)', $edited->series(true), ['width' => 1.5, 'type' => 'dotted', 'color' => '#f97316'], $reducedKeys, 4);
         }
         if ($scatter) {
             $series[] = ['id' => 'measured', 'name' => 'Consignes calculées (mesures)', 'type' => 'scatter', 'data' => $scatter, 'symbolSize' => 3,
-                'encode' => ['x' => 0, 'y' => 1], 'tooltip' => ['formatter' => '@curveTooltip'], 'z' => 1];
+                'encode' => ['x' => 0, 'y' => 1], 'tooltip' => ['formatter' => '@curveTooltip'], 'z' => 1, 'oko' => ['influence']];
         }
         if ($buckets) {
             $series[] = ['id' => 'learned', 'name' => 'Moyenne par °C extérieur', 'type' => 'line', 'symbolSize' => 7,
                 'data' => array_map(fn ($b) => [$b['t'], $b['flow_set']], $buckets),
-                'lineStyle' => ['width' => 0], 'itemStyle' => ['color' => '#0ea5e9'], 'z' => 2];
+                'lineStyle' => ['width' => 0], 'itemStyle' => ['color' => '#0ea5e9'], 'z' => 2, 'oko' => ['slope', 'foot', 'influence']];
         }
 
         return [
             'legend' => ['top' => 0, 'type' => 'scroll'],
-            'grid' => ['left' => 56, 'right' => 24, 'top' => 64, 'bottom' => 48],
-            'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@temp', 'axisPointer' => ['type' => 'cross']],
+            'grid' => ['left' => 64, 'right' => 24, 'top' => 64, 'bottom' => 48],
+            'tooltip' => ['trigger' => 'axis', 'formatter' => '@curveAxisTooltip', 'axisPointer' => ['type' => 'cross']],
             'xAxis' => ['type' => 'value', 'name' => 'Température extérieure (°C)', 'nameLocation' => 'middle', 'nameGap' => 28,
                 'min' => -15, 'max' => 20, 'inverse' => true, 'interval' => 5],
-            'yAxis' => ['type' => 'value', 'name' => 'Départ (°C)', 'min' => 15, 'max' => 85],
+            'yAxis' => ['type' => 'value', 'name' => 'Température de l\'eau dans les radiateurs (°C)', 'nameLocation' => 'middle', 'nameGap' => 40,
+                'nameRotate' => 90, 'min' => 15, 'max' => 85],
             // Dégradé de couleur des points : écart ambiance (rouge = trop chaud, bleu = trop froid)
             'visualMap' => $scatter ? [[
                 'seriesId' => 'measured', 'dimension' => 3, 'min' => -1.5, 'max' => 1.5, 'show' => true, 'orient' => 'horizontal',
@@ -510,6 +647,182 @@ class ChartFactory
                 'inRange' => ['color' => ['#2563eb', '#a3e635', '#dc2626']], 'calculable' => false,
             ]] : null,
             'series' => $series,
+        ];
+    }
+
+    /**
+     * Réglages en jeu selon la T extérieure survolée sur la loi d'eau : au froid la pente, à mi-saison le pied ;
+     * départ borné par le mini / maxi ; au-delà de la limite de chauffe, plus de chauffage.
+     *
+     * @return list<array{0: float, 1: list<string>}>
+     */
+    public function curveHover(HeatingCurve $c): array
+    {
+        $points = [];
+        for ($t = -15; $t <= 20; $t++) {
+            $raw = $c->rawFlow($t);
+            $keys = match (true) {
+                $t > $c->limitComfort => ['limit_comfort'],
+                $raw >= $c->flowMax => ['flow_max', 'slope'],
+                $raw <= $c->flowMin => ['flow_min', 'foot'],
+                $t < 5 => ['slope', 'room_comfort'],
+                default => ['foot', 'room_comfort'],
+            };
+            if ($t > $c->limitReduced && $t <= $c->limitComfort) {
+                $keys[] = 'limit_reduced';
+            }
+            $points[] = [(float) $t, $keys];
+        }
+
+        return $points;
+    }
+
+    /**
+     * Chauffage sur une journée, avec les réglages en vigueur minute par minute (journal des modifications) :
+     * T extérieure (mesurée et moyennée) face aux limites de chauffe et à leur seuil de relance (− 2 °C) ;
+     * T ambiante face à la consigne et au tunnel de l'hystérésis d'ambiance (arrêt au-dessus de consigne + hyst.,
+     * relance sous ce seuil − 1 °C) ; plages confort et marche du circulateur.
+     *
+     * @param  array<int, list<array{0: int, 1: int}>>|null  $windows  programme actuel, en repli
+     */
+    public function heatingDay(string $date, SettingsHistory $history, ?array $windows): array
+    {
+        $rows = $this->dayRows($date);
+        $day = CarbonImmutable::parse($date);
+        $p = fn (string $k) => 'CAPPL:LOCAL.'.$k;
+        $end = $date.' 23:59:59';
+
+        // Réglages minute par minute (points seulement aux changements)
+        $set = $stop = $restart = $band = $limit = $limitRestart = [];
+        $areas = [];
+        $start = null;
+        $last = null;
+        $programs = [];
+        $avgMinutes = 60;
+        // consigne relevée par la chaudière (> 8 °C quand le circuit tourne) : elle prime sur la reconstitution
+        $measuredSet = [];
+        $seen = [];
+        foreach ($rows as $r) {
+            if ($r->hc1_room_set !== null && (float) $r->hc1_room_set > 8) {
+                $measuredSet[(int) substr($r->ts, 11, 2) * 60 + (int) substr($r->ts, 14, 2)] = (float) $r->hc1_room_set;
+            }
+        }
+        for ($m = 0; $m <= 1440; $m++) {
+            $ts = $day->addMinutes(min($m, 1439))->format('Y-m-d H:i:s');
+            $in = false;
+            if ($m < 1440) {
+                $active = (int) ($history->valueAt(TimeProgram::activeVariable('hk'), $ts) ?? 0);
+                $summary = $history->valueAt($p("hk[0].zeitprogramm[{$active}]"), $ts);
+                $slots = ($programs[$summary ?? ''] ??= TimeProgram::parseSummary($summary)) ?? $windows;
+                $minute = $m;
+                $in = $slots === null || collect($slots[$day->dayOfWeek] ?? [])->contains(fn ($w) => $minute >= $w[0] && $minute < $w[1]);
+                // consigne : relevée si le circuit tourne ; sinon la dernière relevée dans la même phase si elle est plus
+                // récente que la dernière observation du réglage (changement fait sur la chaudière), sinon l'historique
+                $setName = $p($in ? 'hk[0].raumtemp_heizen' : 'hk[0].raumtemp_absenken');
+                if (isset($measuredSet[$m])) {
+                    $seen[$in ? 1 : 0] = [$ts, $measuredSet[$m]];
+                    $target = $measuredSet[$m];
+                } elseif (isset($seen[$in ? 1 : 0]) && $seen[$in ? 1 : 0][0] > ($history->observedAt($setName, $ts) ?? '')) {
+                    $target = $seen[$in ? 1 : 0][1];
+                } else {
+                    $target = (float) $history->valueAt($setName, $ts);
+                }
+                $hyst = (float) $history->valueAt($p('hk[0].raumtemp_plus'), $ts);
+                $lim = (float) $history->valueAt($p($in ? 'hk[0].heizgrenze_heizen' : 'hk[0].heizgrenze_absenken'), $ts);
+                $avgMinutes = (int) ($history->valueAt($p('aussentemperatur_mittelungszeit'), $ts) ?? 60);
+                $state = [$target, $hyst, $lim];
+                if ($state !== $last) {
+                    $set[] = [$ts, $target];
+                    $stop[] = [$ts, $target + $hyst];
+                    $restart[] = [$ts, $target + $hyst - 1];
+                    $band[] = [$ts, 1];
+                    $limit[] = [$ts, $lim];
+                    $limitRestart[] = [$ts, $lim - 2];
+                    $last = $state;
+                }
+            }
+            if ($in && $start === null) {
+                $start = $ts;
+            } elseif (! $in && $start !== null) {
+                $areas[] = [['xAxis' => $start, 'itemStyle' => ['color' => 'rgba(16,185,129,.07)']], ['xAxis' => $ts]];
+                $start = null;
+            }
+        }
+        foreach ([&$set, &$stop, &$restart, &$band, &$limit, &$limitRestart] as &$serie) {
+            $serie[] = [$end, end($serie)[1]];
+        }
+        unset($serie);
+
+        // Mesures (coupées sur les trous de plus de 20 min) et T ext moyennée sur la durée réglée
+        $outside = $avg = $room = $pump = [];
+        $window = [];
+        $prev = null;
+        foreach ($rows as $r) {
+            $t = strtotime($r->ts);
+            if ($prev !== null && $t - $prev > 1200) {
+                $gap = date('Y-m-d H:i:s', $prev + 60);
+                $outside[] = $avg[] = $room[] = $pump[] = [$gap, null];
+            }
+            $prev = $t;
+            if ($r->outside_temp !== null) {
+                $window[] = [$t, (float) $r->outside_temp];
+            }
+            while ($window && $window[0][0] <= $t - $avgMinutes * 60) {
+                array_shift($window);
+            }
+            $outside[] = [$r->ts, $r->outside_temp === null ? null : (float) $r->outside_temp];
+            $avg[] = [$r->ts, $window ? round(array_sum(array_column($window, 1)) / count($window), 2) : null];
+            $room[] = [$r->ts, $r->hc1_room_temp === null ? null : (float) $r->hc1_room_temp];
+            $pump[] = [$r->ts, ($r->hc1_pump ?? 0) > 0 ? 1 : 0];
+        }
+
+        $line = fn (string $name, array $data, string $color, array $oko, array $extra = []) => array_merge([
+            'name' => $name, 'type' => 'line', 'data' => $data, 'symbol' => 'none', 'connectNulls' => false, 'triggerEvent' => true,
+            'lineStyle' => ['width' => 1.6, 'color' => $color], 'itemStyle' => ['color' => $color], 'oko' => $oko,
+        ], $extra);
+        $step = fn (string $color, string $type = 'dashed', float $width = 1.4) => ['step' => 'end', 'lineStyle' => ['type' => $type, 'width' => $width, 'color' => $color]];
+        $tag = self::tag(...);
+        $roomKeys = ['room_comfort', 'room_reduced'];
+        $limitKeys = ['limit_comfort', 'limit_reduced'];
+        // légende : la ligne (style réel) pour les courbes, un rectangle pour les zones ; deux rangées, pièce puis extérieur
+        $zone = fn (string $name, string $color) => ['name' => $name, 'icon' => 'rect', 'itemStyle' => ['color' => $color]];
+        $legend = fn (int $top, array $data) => ['top' => $top, 'left' => 52, 'data' => $data, 'itemWidth' => 28, 'itemHeight' => 10, 'itemGap' => 14];
+
+        return [
+            'empty' => $rows === [],
+            'option' => [
+                'legend' => [
+                    $legend(0, ['T ambiante', 'Consigne', 'Arrêt thermostat', 'Relance thermostat', $zone('Tunnel du thermostat', 'rgba(163,163,163,.45)'), $zone('Plage confort', 'rgba(16,185,129,.25)')]),
+                    $legend(22, ['T extérieure', 'T ext moyennée', 'Limite de chauffe', 'Relance limite', $zone('Pompe chauffage', 'rgba(245,158,11,.45)')]),
+                ],
+                'grid' => ['left' => 52, 'right' => 120, 'top' => 60, 'bottom' => 56],
+                'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@num', 'axisPointer' => ['type' => 'cross', 'label' => ['precision' => 1]]],
+                'xAxis' => ['type' => 'time', 'min' => $date.' 00:00:00', 'max' => $end, 'axisLabel' => ['formatter' => '@hour']],
+                // une seule échelle pour toutes les températures ; la pompe sur un axe caché (bandeau en bas)
+                'yAxis' => [
+                    ['type' => 'value', 'name' => '°C', 'scale' => true, 'minInterval' => 1],
+                    ['type' => 'value', 'min' => 0, 'max' => 12, 'show' => false],
+                ],
+                'dataZoom' => self::dayZoom(),
+                'series' => [
+                    // Pièce
+                    $line('T ambiante', $room, self::COLORS['room'], $roomKeys, ['lineStyle' => ['width' => 2.4, 'color' => self::COLORS['room']]] + $tag('pièce', self::COLORS['room'])),
+                    $line('Consigne', $set, '#047857', $roomKeys, $step('#047857', 'solid', 1.4) + $tag('consigne', '#047857')),
+                    $line('Relance thermostat', $restart, '#737373', ['hyst'], $step('#737373', 'dotted') + ['stack' => 'tunnel'] + $tag('relance', '#737373')),
+                    $line('Tunnel du thermostat', $band, '#a3a3a3', ['hyst'], ['step' => 'end', 'stack' => 'tunnel', 'lineStyle' => ['width' => 0],
+                        'areaStyle' => ['color' => 'rgba(163,163,163,.18)'], 'tooltip' => ['valueFormatter' => '@kelvin']]),
+                    $line('Arrêt thermostat', $stop, '#525252', ['hyst'], $step('#525252') + $tag('arrêt', '#525252')),
+                    // zones des plages confort, rattachées à leur entrée de légende (clic = masquer)
+                    $line('Plage confort', [[$date.' 00:00:00', null]], 'rgba(16,185,129,.25)', ['room_comfort'], ['markArea' => ['silent' => true, 'data' => $areas]]),
+                    $line('Pompe chauffage', $pump, '#f59e0b', ['hyst', ...$limitKeys], ['yAxisIndex' => 1, 'step' => 'end', 'sampling' => 'max',
+                        'lineStyle' => ['width' => 0], 'areaStyle' => ['opacity' => 0.25, 'color' => '#f59e0b']]),
+                    // Extérieur
+                    $line('T extérieure', $outside, self::COLORS['outside'], ['average'], ['lineStyle' => ['width' => 1, 'opacity' => 0.6, 'color' => self::COLORS['outside']]]),
+                    $line('T ext moyennée', $avg, '#0369a1', ['average', ...$limitKeys], ['lineStyle' => ['width' => 2.2, 'color' => '#0369a1']] + $tag('ext. moyenne', '#0369a1')),
+                    $line('Limite de chauffe', $limit, '#dc2626', $limitKeys, $step('#dc2626') + $tag('limite', '#dc2626')),
+                    $line('Relance limite', $limitRestart, '#f87171', $limitKeys, $step('#f87171', 'dotted') + $tag('relance limite', '#f87171')),
+                ],
+            ],
         ];
     }
 
@@ -573,12 +886,12 @@ class ChartFactory
         [$ashPoints, $ashForecast] = $ash !== null ? $this->ashHistory($ash, $normals, $from) : [[], []];
 
         $series = [
-                ['name' => 'Stock estimé', 'type' => 'line', 'data' => $points, 'showSymbol' => false, 'areaStyle' => ['opacity' => 0.15],
-                    'itemStyle' => ['color' => '#16a34a'],
-                    'markLine' => ['symbol' => 'none', 'data' => [['yAxis' => (float) settings('alerts.silo_low_kg', 500), 'name' => 'Seuil d\'alerte']],
-                        'lineStyle' => ['color' => '#ef4444', 'type' => 'dashed'], 'label' => ['formatter' => 'seuil d\'alerte', 'position' => 'insideStartTop']]],
-                ['name' => 'Projection', 'type' => 'line', 'data' => $forecast, 'showSymbol' => false,
-                    'lineStyle' => ['type' => 'dashed'], 'itemStyle' => ['color' => '#f59e0b']],
+            ['name' => 'Stock estimé', 'type' => 'line', 'data' => $points, 'showSymbol' => false, 'areaStyle' => ['opacity' => 0.15],
+                'itemStyle' => ['color' => '#16a34a'], ...self::tag('stock', '#16a34a'),
+                'markLine' => ['symbol' => 'none', 'data' => [['yAxis' => (float) settings('alerts.silo_low_kg', 500), 'name' => 'Seuil d\'alerte']],
+                    'lineStyle' => ['color' => '#ef4444', 'type' => 'dashed'], 'label' => ['formatter' => 'seuil d\'alerte', 'position' => 'insideStartTop']]],
+            ['name' => 'Projection', 'type' => 'line', 'data' => $forecast, 'showSymbol' => false,
+                'lineStyle' => ['type' => 'dashed'], 'itemStyle' => ['color' => '#f59e0b'], ...self::tag('projection', '#d97706')],
         ];
         if ($ashPoints !== []) {
             $series[] = ['name' => 'Cendrier', 'type' => 'line', 'yAxisIndex' => 1, 'data' => $ashPoints, 'showSymbol' => false,
@@ -591,14 +904,14 @@ class ChartFactory
                 'areaStyle' => ['origin' => 100, 'opacity' => 0.45, 'color' => '#dc2626'], 'tooltip' => ['show' => false]];
             $series[] = ['name' => 'Projection cendrier', 'type' => 'line', 'yAxisIndex' => 1, 'data' => $ashForecast, 'showSymbol' => false,
                 'itemStyle' => ['color' => '#78716c'], 'lineStyle' => ['type' => 'dotted', 'width' => 1.5],
-                'tooltip' => ['valueFormatter' => '@pct']];
+                'tooltip' => ['valueFormatter' => '@pct'], ...self::tag('cendrier', '#78716c')];
         }
 
         $ashMax = max(array_map(fn ($p) => (float) ($p[1] ?? 0), [...$ashPoints, [null, 0]]));
 
         return [
             'legend' => ['top' => 0, 'data' => array_values(array_filter(array_column($series, 'name'), fn ($n) => $n !== 'Débordement'))],
-            'grid' => ['left' => 56, 'right' => $ashPoints !== [] ? 48 : 16, 'top' => 36, 'bottom' => 48],
+            'grid' => ['left' => 56, 'right' => $ashPoints !== [] ? 150 : 90, 'top' => 36, 'bottom' => 48],
             'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@kg'],
             'xAxis' => ['type' => 'time', 'axisLabel' => ['formatter' => '@month']],
             'yAxis' => array_values(array_filter([
@@ -606,7 +919,7 @@ class ChartFactory
                 // Cendrier dans le tiers bas du graphique : 100 % à 30 % de la hauteur, graduations limitées à 0–100 %
                 $ashPoints !== [] ? ['type' => 'value', 'min' => 0, 'max' => max(round(100 / 0.3, 2), ceil($ashMax / 50) * 50), 'interval' => 50,
                     'splitLine' => ['show' => false], 'axisLabel' => ['formatter' => '@pctUpTo100'],
-                    'axisTick' => ['show' => false]] : null,
+                    'axisTick' => ['show' => false], 'offset' => 86] : null,
             ])),
             'dataZoom' => [['type' => 'inside']],
             'series' => $series,
@@ -627,7 +940,7 @@ class ChartFactory
 
         $emptied = DB::table('stock_events')->where('type', 'ash_emptied')->orderBy('occurred_on')
             ->pluck('occurred_on')->map(fn ($d) => substr((string) $d, 0, 10))->unique()->values();
-        $grams = app(\App\Analysis\PelletCalibration::class)->gramsPerMinute();
+        $grams = app(PelletCalibration::class)->gramsPerMinute();
         $first = $emptied->first(fn ($d) => true);
         $start = max($from, $first);
         // Granulés brûlés entre le dernier vidage antérieur à la période et son début

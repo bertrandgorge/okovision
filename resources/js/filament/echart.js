@@ -1,10 +1,10 @@
 /**
  * Rendu ECharts pour les widgets JS Filament (HasJsRenderer) et le composant <x-echart>.
  *
- * La configuration reçue de PHP : { option, height, group, curveEditor }
+ * La configuration reçue de PHP : { option, height, group, hover }
  *  - option : option ECharts (JSON). Les chaînes "@nom" (voir FORMATTERS) sont remplacées par des fonctions.
  *  - group  : les graphiques d'un même groupe partagent infobulle et zoom (echarts.connect).
- *  - curveEditor : poignées déplaçables pour régler la loi d'eau à la souris (voir setupCurveEditor).
+ *  - hover : mise en exergue des réglages liés au survol (voir setupHover).
  */
 import * as echarts from 'echarts/core'
 import { BarChart, CustomChart, GaugeChart, LineChart, ScatterChart } from 'echarts/charts'
@@ -67,6 +67,13 @@ const FORMATTERS = {
     '@signatureTooltip': (p) => `${p.value[2] ?? ''}<br/>T ext : ${nf1.format(p.value[0])} °C<br/>${nf1.format(p.value[1])} kg/j`,
     // Infobulle du nuage loi d'eau : [T ext, consigne, mesurée, écart ambiance]
     '@curveTooltip': (p) => `T ext ${nf1.format(p.value[0])} °C<br/>Départ consigne ${nf1.format(p.value[1])} °C<br/>Départ mesuré ${nf1.format(p.value[2])} °C<br/>Écart ambiance ${nf1.format(p.value[3])} K`,
+    // Infobulle (axe) de la loi d'eau : les courbes seulement, pas le nuage des consignes mesurées (trop de points)
+    '@curveAxisTooltip': (params) => {
+        const list = (Array.isArray(params) ? params : [params]).filter((p) => p.seriesType !== 'scatter' && p.value?.[1] != null)
+        if (!list.length) return ''
+        return `T ext ${nf1.format(list[0].value[0])} °C<br/>`
+            + list.map((p) => `${p.marker}${p.seriesName} : <strong>${nf1.format(p.value[1])} °C</strong>`).join('<br/>')
+    },
     // Frise (type Gantt) : data = [ligne, début, fin, libellé, couleur]
     '@ganttRender': (params, api) => {
         const row = api.value(0)
@@ -132,62 +139,52 @@ function buildOption(configuration) {
     delete base._axis
     const option = hydrate(structuredClone(configuration.option || {}))
     for (const k of Object.keys(option)) if (option[k] === null) delete option[k]
-    return applyAxisTheme({ ...base, ...option, legend: { ...base.legend, ...(option.legend || {}) } }, dark)
+    // Lisibilité : courbes sans symbole (la légende reprend alors le trait plein / pointillé), légende aérée
+    for (const s of option.series || []) {
+        if (s.type === 'line' && s.showSymbol === false && s.symbol === undefined) s.symbol = 'none'
+    }
+    const legendBase = { ...base.legend, itemWidth: 28, itemHeight: 10, itemGap: 14 }
+    const legend = Array.isArray(option.legend)
+        ? option.legend.map((l) => ({ ...legendBase, ...l }))
+        : { ...legendBase, ...(option.legend || {}) }
+    return applyAxisTheme({ ...base, ...option, legend }, dark)
 }
 
 /**
- * Poignées déplaçables sur la loi d'eau : deux points (T ext, T départ). À la fin du déplacement,
- * un évènement « oko-curve-drag » remonte avec les nouvelles coordonnées ; la page Livewire recalcule
- * pente et pied de courbe.
+ * Mise en exergue des réglages au survol (évènement « oko-setting-hover » sur window, detail.keys = clés de réglages) :
+ *  - une série (ou un point) peut porter « oko: ['cle', …] » : survol de la ligne / de la zone ;
+ *  - configuration.hover = { points: [[x, ['cle', …]], …] } : survol de l'axe X (point le plus proche).
  */
-function setupCurveEditor(chart, host, editor) {
-    if (!editor || !editor.points) return
-    const seriesIndex = editor.seriesIndex ?? 0
+function setupHover(chart, configuration) {
+    chart.off('mouseover')
+    chart.off('updateAxisPointer')
+    chart.off('globalout')
+    const series = configuration.option?.series || []
+    const points = configuration.hover?.points || null
+    if (!points && !series.some((s) => s.oko)) return
 
-    const draw = () => {
-        const points = editor.points
-        chart.setOption({
-            graphic: points.map((p, i) => ({
-                id: `handle-${i}`,
-                type: 'circle',
-                position: chart.convertToPixel({ seriesIndex }, p),
-                shape: { r: 9 },
-                style: { fill: '#f59e0b', stroke: '#fff', lineWidth: 2, shadowBlur: 6, shadowColor: 'rgba(0,0,0,.35)' },
-                cursor: 'ns-resize',
-                draggable: true,
-                z: 100,
-                ondrag(e) {
-                    const pos = chart.convertFromPixel({ seriesIndex }, [this.x, this.y])
-                    // on ne déplace qu'en vertical : T ext fixe
-                    const flow = Math.round(pos[1] * 2) / 2
-                    this.x = chart.convertToPixel({ seriesIndex }, [points[i][0], flow])[0]
-                    editor.points[i] = [points[i][0], flow]
-                    preview()
-                },
-                ondragend() {
-                    host.dispatchEvent(new CustomEvent('oko-curve-drag', { bubbles: true, detail: { points: editor.points } }))
-                },
-            })),
-        })
+    let last = ''
+    const emit = (keys) => {
+        const sig = (keys || []).join(',')
+        if (sig === last) return
+        last = sig
+        window.dispatchEvent(new CustomEvent('oko-setting-hover', { detail: { keys: keys || [] } }))
     }
 
-    // Aperçu : droite entre les deux poignées, prolongée
-    const preview = () => {
-        const [[t1, f1], [t2, f2]] = editor.points
-        const slope = (f1 - f2) / (t2 - t1)
-        const data = []
-        for (let t = -15; t <= 20; t += 0.5) data.push([t, Math.round((f1 + slope * (t1 - t)) * 10) / 10])
-        chart.setOption({ series: [{ id: 'preview', type: 'line', data, showSymbol: false, lineStyle: { type: 'dashed', width: 2, color: '#f59e0b' }, z: 5 }] })
-    }
-
-    draw()
-    chart.on('finished', () => {
-        // repositionnement après redimensionnement
-        editor.points.forEach((p, i) => {
-            const pos = chart.convertToPixel({ seriesIndex }, p)
-            chart.setOption({ graphic: [{ id: `handle-${i}`, position: pos }] }, { silent: true })
-        })
+    chart.on('mouseover', (p) => {
+        const keys = p.data?.oko || series[p.seriesIndex]?.oko
+        if (keys) emit(keys)
     })
+    if (points) {
+        chart.on('updateAxisPointer', (e) => {
+            const x = e.axesInfo?.find((a) => a.axisDim === 'x')?.value
+            if (x === undefined) return
+            let best = null
+            for (const pt of points) if (best === null || Math.abs(pt[0] - x) < Math.abs(best[0] - x)) best = pt
+            if (best) emit(best[1])
+        })
+    }
+    chart.on('globalout', () => emit([]))
 }
 
 export default function mountEchart({ host, props }) {
@@ -204,7 +201,7 @@ export default function mountEchart({ host, props }) {
             echarts.connect(configuration.group)
         }
         chart.setOption(buildOption(configuration), true)
-        setupCurveEditor(chart, host, configuration.curveEditor ? structuredClone(configuration.curveEditor) : null)
+        setupHover(chart, configuration)
     }
     init()
 
@@ -220,7 +217,7 @@ export default function mountEchart({ host, props }) {
             configuration = next || {}
             host.style.height = configuration.height || '360px'
             chart.setOption(buildOption(configuration), true)
-            setupCurveEditor(chart, host, configuration.curveEditor ? structuredClone(configuration.curveEditor) : null)
+            setupHover(chart, configuration)
         },
         destroy() {
             resize.disconnect()

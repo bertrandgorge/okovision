@@ -2,7 +2,7 @@
     'option' => [],
     'height' => '360px',
     'group' => null,
-    'curveEditor' => null,
+    'hover' => null,
     'id' => null,
 ])
 
@@ -16,7 +16,7 @@
         'option' => $option,
         'height' => $height,
         'group' => $group,
-        'curveEditor' => $curveEditor,
+        'hover' => $hover,
     ], fn ($v) => $v !== null);
     $key = $id ?? 'echart-'.md5(json_encode(array_keys($option)).$height);
 @endphp

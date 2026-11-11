@@ -4,33 +4,47 @@ namespace App\Filament\Pages;
 
 use App\Analysis\HeatingCurve;
 use App\Charts\ChartFactory;
+use App\Filament\Concerns\AppliesSettings;
 use App\Models\BoilerProfile;
 use App\Okofen\BoilerService;
+use App\Okofen\Catalog;
+use App\Okofen\SettingsHistory;
+use App\Okofen\TimeProgram;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Livewire\Attributes\Url;
 
 class HeatingCurvePage extends Page
 {
+    use AppliesSettings;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowTrendingUp;
 
-    protected static ?string $navigationLabel = 'Loi d\'eau';
+    protected static ?string $navigationLabel = 'Chauffage';
 
-    protected static ?string $title = 'Loi d\'eau (courbe de chauffe)';
+    protected static ?string $title = 'Chauffage';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Réglages';
 
     protected static ?int $navigationSort = 1;
 
-    protected static ?string $slug = 'loi-d-eau';
+    protected static ?string $slug = 'chauffage';
 
     protected string $view = 'filament.pages.heating-curve';
 
-    /** Valeurs en cours d'édition (clés de HeatingCurve::PARAMS) */
+    /** Réglages de la page : loi d'eau + thermostat d'ambiance et moyenne de la T ext */
+    public const PARAMS = HeatingCurve::PARAMS + [
+        'hyst' => 'CAPPL:LOCAL.hk[0].raumtemp_plus',
+        'lead' => 'CAPPL:LOCAL.hk[0].vorhaltezeit',
+        'average' => 'CAPPL:LOCAL.aussentemperatur_mittelungszeit',
+    ];
+
+    /** Valeurs en cours d'édition (clés de self::PARAMS) */
     public array $edit = [];
 
     /** Valeurs actuelles de la chaudière */
@@ -41,25 +55,49 @@ class HeatingCurvePage extends Page
     #[Url]
     public int $days = 60;
 
+    /** Journée du graphique temporel */
+    #[Url]
+    public ?string $date = null;
+
     public function mount(): void
     {
+        if (! $this->date || ! strtotime($this->date)) {
+            $last = DB::table('measurements')->max('ts');
+            $this->date = $last ? substr($last, 0, 10) : now()->format('Y-m-d');
+        }
         $this->load();
+    }
+
+    public function previous(): void
+    {
+        $this->date = CarbonImmutable::parse($this->date)->subDay()->format('Y-m-d');
+    }
+
+    public function next(): void
+    {
+        $next = CarbonImmutable::parse($this->date)->addDay();
+        if (! $next->isAfter(now()->endOfDay())) {
+            $this->date = $next->format('Y-m-d');
+        }
     }
 
     public function load(bool $fresh = false): void
     {
+        $extra = array_diff_key(self::PARAMS, HeatingCurve::PARAMS);
         try {
-            $this->current = app(BoilerService::class)->currentCurve($fresh)->toArray();
+            $boiler = app(BoilerService::class);
+            $this->current = $boiler->currentCurve($fresh)->toArray();
+            $read = $boiler->read(array_values($extra), $fresh);
+            foreach ($extra as $key => $name) {
+                $this->current[$key] = isset($read[$name]) ? $read[$name]->value() : null;
+            }
             $this->error = null;
         } catch (\Throwable $e) {
             $this->error = $e->getMessage();
             // à défaut : dernier profil connu, sinon valeurs par défaut
             $profile = BoilerProfile::query()->latest()->first();
-            $values = [];
-            foreach (HeatingCurve::PARAMS as $key => $name) {
-                $values[$key] = $profile?->values[$name] ?? null;
-            }
-            $this->current = HeatingCurve::fromArray($values)->toArray();
+            $values = array_map(fn ($name) => $profile?->values[$name] ?? null, self::PARAMS);
+            $this->current = HeatingCurve::fromArray($values)->toArray() + array_intersect_key($values, $extra);
         }
         $this->edit = $this->current;
     }
@@ -69,42 +107,32 @@ class HeatingCurvePage extends Page
         $this->edit = $this->current;
     }
 
-    /** Appelé quand on lâche une poignée sur le graphique : deux points (T ext, T départ). */
-    public function dragCurve(array $points): void
-    {
-        if (count($points) !== 2) {
-            return;
-        }
-        [[$t1, $f1], [$t2, $f2]] = $points;
-        $r = HeatingCurve::fromTwoPoints((float) $t1, (float) $f1, (float) $t2, (float) $f2, (float) ($this->edit['room_comfort'] ?? 20));
-        $this->edit['slope'] = max(0, min(4, round($r['slope'], 1)));
-        $this->edit['foot'] = max(20, min(45, round($r['foot'] * 2) / 2));
-    }
-
     public function applySuggestion(float $slope, float $foot): void
     {
         $this->edit['slope'] = $slope;
         $this->edit['foot'] = $foot;
     }
 
-    public function step(string $key, float $delta): void
-    {
-        $limits = ['slope' => [0, 4], 'foot' => [20, 45], 'room_comfort' => [5, 40], 'room_reduced' => [10, 40], 'influence' => [0, 10],
-            'flow_min' => [0, 80], 'flow_max' => [0, 80], 'limit_comfort' => [-40, 60], 'limit_reduced' => [-40, 60], 'raise' => [0, 50]];
-        [$lo, $hi] = $limits[$key] ?? [-100, 100];
-        $this->edit[$key] = round(max($lo, min($hi, (float) ($this->edit[$key] ?? 0) + $delta)), 1);
-    }
-
     public function changes(): array
     {
         $changes = [];
-        foreach (HeatingCurve::PARAMS as $key => $name) {
-            if (isset($this->edit[$key], $this->current[$key]) && abs((float) $this->edit[$key] - (float) $this->current[$key]) > 1e-6) {
+        foreach (self::PARAMS as $key => $name) {
+            if ($this->isSettingChanged($key)) {
                 $changes[$name] = (float) $this->edit[$key];
             }
         }
 
         return $changes;
+    }
+
+    protected function settingParams(): array
+    {
+        return self::PARAMS;
+    }
+
+    protected function settingSource(): string
+    {
+        return 'curve';
     }
 
     protected function getHeaderActions(): array
@@ -116,11 +144,11 @@ class HeatingCurvePage extends Page
                 ->color('gray')
                 ->action(fn () => $this->load(true)),
             Action::make('apply')
-                ->label('Appliquer à la chaudière')
+                ->label('Tout appliquer')
                 ->icon(Heroicon::OutlinedPaperAirplane)
                 ->disabled(fn () => $this->changes() === [] || $this->error !== null)
                 ->requiresConfirmation()
-                ->modalHeading('Appliquer la nouvelle loi d\'eau ?')
+                ->modalHeading('Appliquer ces réglages de chauffage ?')
                 ->modalDescription(fn () => new HtmlString($this->changesDescription()))
                 ->action(function () {
                     $results = app(BoilerService::class)->apply($this->changes(), 'curve', auth()->id());
@@ -129,7 +157,7 @@ class HeatingCurvePage extends Page
                         Notification::make()->title('Certaines valeurs n\'ont pas été appliquées')
                             ->body(implode("\n", array_map(fn ($r) => $r['name'].' : '.$r['message'], $failed)))->danger()->persistent()->send();
                     } else {
-                        Notification::make()->title('Loi d\'eau appliquée')->body('Attendez au moins 24 h avant un nouvel ajustement.')->success()->send();
+                        Notification::make()->title('Réglages appliqués')->body('Attendez au moins 24 h avant un nouvel ajustement de la loi d\'eau.')->success()->send();
                     }
                     $this->load(true);
                 }),
@@ -138,15 +166,11 @@ class HeatingCurvePage extends Page
 
     private function changesDescription(): string
     {
-        $labels = [
-            'slope' => 'Pente', 'foot' => 'Pied de courbe', 'room_comfort' => 'Consigne confort', 'room_reduced' => 'Consigne réduit',
-            'influence' => 'Influence sonde d\'ambiance', 'flow_min' => 'Départ mini', 'flow_max' => 'Départ maxi',
-            'limit_comfort' => 'Limite de chauffe confort', 'limit_reduced' => 'Limite de chauffe réduit', 'raise' => 'Surélévation',
-        ];
+        $catalog = app(Catalog::class);
         $lines = [];
-        foreach (HeatingCurve::PARAMS as $key => $name) {
+        foreach (self::PARAMS as $key => $name) {
             if (isset($this->changes()[$name])) {
-                $lines[] = '<li><strong>'.e($labels[$key]).'</strong> : '.e($this->current[$key]).' → '.e($this->edit[$key]).'</li>';
+                $lines[] = '<li><strong>'.e($catalog->label($catalog->parameter($name) ?? ['name' => $name])).'</strong> : '.e($this->current[$key]).' → '.e($this->edit[$key]).'</li>';
             }
         }
 
@@ -155,6 +179,7 @@ class HeatingCurvePage extends Page
 
     protected function getViewData(): array
     {
+        $charts = app(ChartFactory::class);
         $current = HeatingCurve::fromArray($this->current);
         $edited = HeatingCurve::fromArray($this->edit);
         $to = CarbonImmutable::today()->format('Y-m-d');
@@ -162,10 +187,6 @@ class HeatingCurvePage extends Page
 
         $learned = $current->learn($from, $to);
         $scatter = $current->scatter($from, $to, 3000);
-
-        // Poignées : T ext −5 °C et +15 °C sur la courbe éditée en confort (sans les bornes min/max)
-        $handles = [[-5.0, round($edited->rawFlow(-5), 1)], [15.0, round($edited->rawFlow(15), 1)]];
-        $option = app(ChartFactory::class)->curve($current, $edited, $scatter, $learned['buckets'], $handles);
 
         $table = [];
         foreach ([-10, -5, 0, 5, 10, 15] as $t) {
@@ -179,9 +200,21 @@ class HeatingCurvePage extends Page
             ];
         }
 
+        // Journée : réglages en vigueur à chaque instant (journal des modifications, valeurs actuelles en repli)
+        try {
+            $windows = app(TimeProgram::class)->windows('hk');
+        } catch (\Throwable) {
+            $windows = null;
+        }
+        $fallback = array_combine(array_values(self::PARAMS), array_map(fn ($k) => $this->current[$k] ?? null, array_keys(self::PARAMS)));
+        if ($windows !== null) {
+            $fallback['CAPPL:LOCAL.hk[0].zeitprogramm[0]'] = TimeProgram::summary($windows);
+        }
+
         return [
-            'option' => $option,
-            'handles' => $handles,
+            'option' => $charts->curve($current, $this->changes() !== [] ? $edited : null, $scatter, $learned['buckets']),
+            'curveHover' => $charts->curveHover($edited),
+            'dayChart' => $charts->heatingDay($this->date, new SettingsHistory($fallback), $windows),
             'learned' => $learned,
             'table' => $table,
             'from' => $from,

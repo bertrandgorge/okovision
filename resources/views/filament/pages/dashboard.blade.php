@@ -2,6 +2,7 @@
     @php
         $v = $live['values'] ?? [];
         $fmt = fn ($x, $d = 1) => $x === null ? null : number_format((float) $x, $d, ',', ' ');
+        $fmtd = fn ($x, $d = 1) => $fmt($x, $d) ?? '—';
         $outside = $v['outside_temp'] ?? $last?->outside_temp;
         $room = $v['hc1_room_temp'] ?? $last?->hc1_room_temp;
         $boilerT = $v['boiler_temp'] ?? $last?->boiler_temp;
@@ -9,6 +10,18 @@
     @endphp
 
     <div wire:poll.120s class="space-y-6">
+        {{-- Choix de la journée détaillée plus bas (comme l'ancienne page « Journée ») --}}
+        <div class="flex flex-wrap items-center gap-2">
+            <x-filament::icon-button icon="heroicon-o-chevron-left" wire:click="previous" label="Jour précédent" tooltip="Jour précédent" color="gray" />
+            <x-filament::input.wrapper class="w-48">
+                <x-filament::input type="date" wire:model.live="date" :max="now()->format('Y-m-d')" />
+            </x-filament::input.wrapper>
+            <x-filament::icon-button icon="heroicon-o-chevron-right" wire:click="next" label="Jour suivant" tooltip="Jour suivant" color="gray"
+                :disabled="$date >= now()->format('Y-m-d')" />
+            <span class="ms-2 text-lg font-medium">Journée du {{ \Carbon\Carbon::parse($date)->translatedFormat('l d F Y') }}</span>
+            <div wire:loading wire:target="previous,next,date" class="ms-2"><x-filament::loading-indicator class="h-5 w-5" /></div>
+        </div>
+
         {{-- État --}}
         <div class="flex flex-wrap items-center gap-3">
             <x-filament::badge :color="$statusColor" size="lg" icon="heroicon-o-fire">
@@ -24,6 +37,31 @@
                 @endif
             </span>
         </div>
+
+        {{-- Pourquoi le chauffage tourne ou non (règles du régulateur, docs/REGULATION-OKOFEN.md) --}}
+        @if ($heating)
+            <div @class([
+                'flex items-start gap-3 rounded-xl p-4 text-sm ring-1',
+                'bg-white ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10' => $heating['running'],
+                'bg-gray-50 ring-gray-200 dark:bg-white/5 dark:ring-white/10' => ! $heating['running'],
+            ])>
+                <x-filament::icon :icon="$heating['running'] ? 'heroicon-o-fire' : 'heroicon-o-pause-circle'"
+                    @class(['h-5 w-5 shrink-0', 'text-success-600' => $heating['running'], 'text-gray-500' => ! $heating['running']]) />
+                <div class="space-y-1">
+                    <div class="font-medium">{{ $heating['headline'] }}</div>
+                    @if ($heating['reasons'])
+                        <ul class="list-disc ps-4 text-gray-600 dark:text-gray-300">
+                            @foreach ($heating['reasons'] as $reason)
+                                <li>{{ $reason }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                    @if ($heating['restart'])
+                        <div class="text-gray-500 dark:text-gray-400">{{ $heating['restart'] }}</div>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         @foreach ($alerts as $alert)
             <div @class([
@@ -42,8 +80,16 @@
 
         {{-- Indicateurs --}}
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-8">
-            <x-kpi label="T° extérieure" icon="heroicon-o-cloud" color="info" :value="$fmt($outside)" unit="°C"
-                   :hint="$range?->out_min !== null ? 'min '.$fmt($range->out_min).' · max '.$fmt($range->out_max).' °C' : null" />
+            {{-- Aujourd'hui : valeur courante et plage du jour ; jour passé : moyenne et plage de ce jour --}}
+            <x-kpi label="T° extérieure" icon="heroicon-o-cloud" color="info" unit="°C"
+                   :value="$isToday ? $fmt($outside) : $fmt($dayStat?->outside_avg)"
+                   :hint="$isToday
+                       ? ($range?->out_min !== null ? 'min '.$fmt($range->out_min).' · max '.$fmt($range->out_max).' °C' : null)
+                       : ($dayStat ? 'moyenne · min '.$fmtd($dayStat->outside_min).' · max '.$fmtd($dayStat->outside_max).' °C' : null)">
+                @if ($dayStat?->dju !== null)
+                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $fmt($dayStat->dju) }} DJU (base {{ settings('climate.dju_base') }} °C)</div>
+                @endif
+            </x-kpi>
             <x-kpi label="T° ambiance" icon="heroicon-o-home" color="success" :value="$fmt($room)" unit="°C"
                    :hint="$range?->room_min !== null ? 'min '.$fmt($range->room_min).' · max '.$fmt($range->room_max).' °C' : null">
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ $last && $last->hc1_room_set > 8 ? 'consigne '.$fmt($last->hc1_room_set).' °C' : 'circuit à l\'arrêt' }}</div>
@@ -52,14 +98,22 @@
                    :hint="isset($v['flame_temp']) ? 'flamme '.$fmt($v['flame_temp'], 0).' °C' : null" />
             <x-kpi label="Eau chaude" icon="heroicon-o-beaker" color="primary" :value="$fmt($dhw)" unit="°C"
                    :hint="$last ? 'consigne '.$fmt($last->dhw1_set, 0).' °C' : null" />
-            <x-kpi label="Granulés aujourd'hui" icon="heroicon-o-scale" :value="$fmt($today?->pellets_kg)" unit="kg"
-                   :hint="$yesterday ? 'hier '.$fmt($yesterday->pellets_kg).' kg' : null" />
-            <x-kpi label="Cycles aujourd'hui" icon="heroicon-o-arrow-path" color="warning" :value="$today?->cycles"
-                   :hint="$yesterday ? 'hier '.$yesterday->cycles.' ('.$yesterday->cold_starts.' à froid)' : null" />
-            <x-kpi label="Silo" icon="heroicon-o-archive-box" :color="($silo['pct'] ?? 100) < 15 ? 'danger' : 'success'"
+            <x-kpi :label="$isToday ? 'Granulés aujourd\'hui' : 'Granulés'" :href="\App\Filament\Pages\History::getUrl()" icon="heroicon-o-scale" :value="$fmt($dayStat?->pellets_kg)" unit="kg"
+                   :hint="$dayStat ? 'dont ECS '.$fmtd($dayStat->pellets_kg_dhw).' kg' : null">
+                @if ($prevStat)
+                    <div class="text-xs text-gray-500 dark:text-gray-400">veille {{ $fmt($prevStat->pellets_kg) }} kg</div>
+                @endif
+            </x-kpi>
+            <x-kpi :label="$isToday ? 'Cycles aujourd\'hui' : 'Cycles'" :href="\App\Filament\Pages\Optimization::getUrl()" icon="heroicon-o-arrow-path" color="warning" :value="$dayStat?->cycles"
+                   :hint="$dayStat ? $dayStat->cold_starts.' allumage(s) à froid' : null">
+                @if ($prevStat)
+                    <div class="text-xs text-gray-500 dark:text-gray-400">veille {{ $prevStat->cycles }} ({{ $prevStat->cold_starts }} à froid)</div>
+                @endif
+            </x-kpi>
+            <x-kpi label="Silo" :href="\App\Filament\Pages\Silo::getUrl()" icon="heroicon-o-archive-box" :color="($silo['pct'] ?? 100) < 15 ? 'danger' : 'success'"
                    :value="$silo['level_kg'] !== null ? number_format($silo['level_kg'], 0, ',', ' ') : null" unit="kg"
                    :hint="$silo['days_left'] !== null ? '≈ '.$silo['days_left'].' jours ('.\Carbon\Carbon::parse($silo['empty_on'])->translatedFormat('d M').')' : ($silo['pct'] !== null ? $silo['pct'].' %' : 'saisir une livraison')" />
-            <x-kpi label="Cendrier" icon="heroicon-o-trash" :color="($ash['pct'] ?? 0) >= 85 ? 'danger' : 'gray'"
+            <x-kpi label="Cendrier" :href="\App\Filament\Pages\Silo::getUrl()" icon="heroicon-o-trash" :color="($ash['pct'] ?? 0) >= 85 ? 'danger' : 'gray'"
                    :value="$ash['pct'] !== null ? $fmt($ash['pct'], 0) : null" unit="%"
                    :hint="match (true) {
                        ! $ash['since'] => 'saisir un vidage',
@@ -71,65 +125,89 @@
             </x-kpi>
         </div>
 
-        {{-- Journée en cours --}}
-        <x-filament::section :heading="'Journée du '.\Carbon\Carbon::parse($day)->translatedFormat('l d F')" collapsible>
+        @if ($dayCharts['empty'])
+            <x-filament::section>
+                <p class="text-sm text-gray-500">Aucune mesure pour cette journée (ni en base, ni dans les archives).</p>
+            </x-filament::section>
+        @else
+            <x-filament::section heading="Températures" description="Zones colorées : cycles brûleur (rouge = allumage à froid). Molette pour zoomer, les trois graphiques sont synchronisés.">
+                <x-echart id="day-temp-{{ $date }}" :option="$dayCharts['temperatures']" height="380px" group="day" />
+            </x-filament::section>
+            <x-filament::section heading="États du brûleur et des pompes">
+                <x-echart id="day-states-{{ $date }}" :option="$dayCharts['states']" height="150px" group="day" />
+            </x-filament::section>
+            <x-filament::section heading="Combustion" description="Le taux d'alimentation de la vis et la vitesse du ventilateur traduisent la puissance de modulation." collapsible>
+                <x-echart id="day-comb-{{ $date }}" :option="$dayCharts['combustion']" height="320px" group="day" />
+            </x-filament::section>
+        @endif
+
+        @if ($cycles->isNotEmpty())
+            <x-filament::section heading="Cycles brûleur" collapsible collapsed>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="text-left text-gray-500">
+                            <tr>
+                                <th class="py-2">Début</th><th>Fin</th><th class="text-end">Durée</th><th class="text-end">Allumage</th>
+                                <th class="text-end">Combustion</th><th class="text-end">Fin comb.</th><th class="text-end">Arrêt avant</th>
+                                <th class="text-end">Granulés</th><th class="text-end">T chaudière</th><th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-white/5">
+                            @foreach ($cycles as $c)
+                                <tr>
+                                    <td class="py-1.5">{{ $c->started_at->format('H:i') }}</td>
+                                    <td>{{ $c->ended_at?->format('H:i') }}</td>
+                                    <td class="text-end">{{ $c->duration_min }} min</td>
+                                    <td class="text-end">{{ $c->ignition_min }} min</td>
+                                    <td class="text-end font-medium">{{ $c->combustion_min }} min</td>
+                                    <td class="text-end">{{ $c->runon_min }} min</td>
+                                    <td class="text-end">{{ $c->off_before_min !== null ? $c->off_before_min.' min' : '—' }}</td>
+                                    <td class="text-end">{{ $fmt($c->pellets_kg, 2) }} kg</td>
+                                    <td class="text-end">{{ $fmt($c->boiler_temp_start) }} → {{ $fmt($c->boiler_temp_max) }} °C</td>
+                                    <td class="space-x-1">
+                                        @if ($c->cold_start)<x-filament::badge color="danger" size="sm">à froid</x-filament::badge>@endif
+                                        @if ($c->heating)<x-filament::badge color="warning" size="sm">chauffage</x-filament::badge>@endif
+                                        @if ($c->dhw)<x-filament::badge color="info" size="sm">ECS</x-filament::badge>@endif
+                                        @unless ($c->complete)<x-filament::badge color="gray" size="sm">incomplet</x-filament::badge>@endunless
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </x-filament::section>
+        @endif
+
+        {{-- Recommandations --}}
+        <x-filament::section heading="Recommandations" icon="heroicon-o-light-bulb">
             <x-slot name="afterHeader">
-                <x-filament::link :href="\App\Filament\Pages\DayView::getUrl(['date' => $day])" icon="heroicon-o-arrow-top-right-on-square">Détail</x-filament::link>
+                <x-filament::link :href="\App\Filament\Pages\Optimization::getUrl()">Voir l'analyse</x-filament::link>
             </x-slot>
-            @if ($dayCharts['empty'])
-                <p class="text-sm text-gray-500">Pas de mesures pour cette journée.</p>
+            @if (! $advice)
+                <p class="text-sm text-gray-500">Analyse indisponible (chaudière injoignable ou historique insuffisant).</p>
             @else
-                <x-echart id="dash-temp" :option="$dayCharts['temperatures']" height="320px" group="dash" />
-                <x-echart id="dash-states" :option="$dayCharts['states']" height="130px" group="dash" />
+                <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <x-kpi label="Cycles / jour" :value="$fmt($advice['stats']['cycles_per_day'])" />
+                    <x-kpi label="Combustion médiane" :value="$advice['stats']['median_combustion_min']" unit="min" />
+                    <x-kpi label="Arrêt médian" :value="$advice['stats']['median_off_min']" unit="min" />
+                    <x-kpi label="Part combustion" :value="$advice['stats']['combustion_ratio'] !== null ? $fmt($advice['stats']['combustion_ratio'] * 100, 0) : null" unit="%" hint="du temps de cycle" />
+                </div>
+                <ul class="divide-y divide-gray-100 dark:divide-white/5">
+                    @forelse (array_slice($advice['recommendations'], 0, 4) as $rec)
+                        <li class="flex items-start gap-3 py-3">
+                            <x-filament::badge class="shrink-0" :color="['critical' => 'danger', 'warning' => 'warning', 'info' => 'info'][$rec['severity']]">
+                                {{ ['critical' => 'Important', 'warning' => 'Conseillé', 'info' => 'À étudier'][$rec['severity']] }}
+                            </x-filament::badge>
+                            <div>
+                                <div class="font-medium">{{ $rec['title'] }}</div>
+                                <div class="text-sm text-gray-500">{{ $rec['summary'] }}</div>
+                            </div>
+                        </li>
+                    @empty
+                        <li class="py-3 text-sm text-gray-500">Rien à signaler sur la période analysée.</li>
+                    @endforelse
+                </ul>
             @endif
         </x-filament::section>
-
-        <div class="grid gap-6 lg:grid-cols-3">
-            {{-- Recommandations --}}
-            <x-filament::section heading="Recommandations" class="lg:col-span-2" icon="heroicon-o-light-bulb">
-                <x-slot name="afterHeader">
-                    <x-filament::link :href="\App\Filament\Pages\Optimization::getUrl()">Voir l'analyse</x-filament::link>
-                </x-slot>
-                @if (! $advice)
-                    <p class="text-sm text-gray-500">Analyse indisponible (chaudière injoignable ou historique insuffisant).</p>
-                @else
-                    <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                        <x-kpi label="Cycles / jour" :value="$fmt($advice['stats']['cycles_per_day'])" />
-                        <x-kpi label="Combustion médiane" :value="$advice['stats']['median_combustion_min']" unit="min" />
-                        <x-kpi label="Arrêt médian" :value="$advice['stats']['median_off_min']" unit="min" />
-                        <x-kpi label="Part combustion" :value="$advice['stats']['combustion_ratio'] !== null ? $fmt($advice['stats']['combustion_ratio'] * 100, 0) : null" unit="%" hint="du temps de cycle" />
-                    </div>
-                    <ul class="divide-y divide-gray-100 dark:divide-white/5">
-                        @forelse (array_slice($advice['recommendations'], 0, 4) as $rec)
-                            <li class="flex items-start gap-3 py-3">
-                                <x-filament::badge class="shrink-0" :color="['critical' => 'danger', 'warning' => 'warning', 'info' => 'info'][$rec['severity']]">
-                                    {{ ['critical' => 'Important', 'warning' => 'Conseillé', 'info' => 'À étudier'][$rec['severity']] }}
-                                </x-filament::badge>
-                                <div>
-                                    <div class="font-medium">{{ $rec['title'] }}</div>
-                                    <div class="text-sm text-gray-500">{{ $rec['summary'] }}</div>
-                                </div>
-                            </li>
-                        @empty
-                            <li class="py-3 text-sm text-gray-500">Rien à signaler sur la période analysée.</li>
-                        @endforelse
-                    </ul>
-                @endif
-            </x-filament::section>
-
-            {{-- Silo --}}
-            <x-filament::section heading="Silo" icon="heroicon-o-archive-box">
-                <x-slot name="afterHeader">
-                    <x-filament::link :href="\App\Filament\Pages\Silo::getUrl()">Détail</x-filament::link>
-                </x-slot>
-                <x-echart id="dash-silo" :option="$charts->gauge($silo['pct'], 'stock')" height="200px" />
-                <dl class="mt-2 grid grid-cols-2 gap-2 text-sm">
-                    <dt class="text-gray-500">Stock estimé</dt><dd class="text-end font-medium">{{ $silo['level_kg'] !== null ? number_format($silo['level_kg'], 0, ',', ' ').' kg' : '—' }}</dd>
-                    <dt class="text-gray-500">Consommation récente</dt><dd class="text-end font-medium">{{ $silo['daily_avg_kg'] !== null ? $fmt($silo['daily_avg_kg']).' kg/j' : '—' }}</dd>
-                    <dt class="text-gray-500">Épuisement estimé</dt><dd class="text-end font-medium">{{ $silo['empty_on'] ? \Carbon\Carbon::parse($silo['empty_on'])->translatedFormat('d F Y') : '—' }}</dd>
-                    <dt class="text-gray-500">Dernier point connu</dt><dd class="text-end">{{ $silo['anchor'] ? \Carbon\Carbon::parse($silo['anchor']['date'])->format('d/m/Y') : '—' }}</dd>
-                </dl>
-            </x-filament::section>
-        </div>
     </div>
 </x-filament-panels::page>

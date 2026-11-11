@@ -6,6 +6,7 @@ use App\Models\BoilerParameterChange;
 use App\Models\BoilerProfile;
 use App\Okofen\BoilerService;
 use App\Okofen\Catalog;
+use App\Okofen\SpecialPrograms;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -26,7 +27,7 @@ class BoilerSettings extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'Réglages';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $slug = 'reglages';
 
@@ -52,6 +53,20 @@ class BoilerSettings extends Page
     public ?string $error = null;
 
     public bool $loadedExpert = false;
+
+    /**
+     * Réglages modifiés sur une autre page (Chauffage, Eau chaude, Programmes horaires) : absents de celle-ci.
+     *
+     * @return list<string>
+     */
+    public static function elsewhere(): array
+    {
+        return array_values(array_unique(array_merge(
+            array_values(HeatingCurvePage::PARAMS),
+            array_values(HotWaterPage::PARAMS),
+            SpecialPrograms::NAMES,
+        )));
+    }
 
     public static function key(string $name): string
     {
@@ -218,6 +233,8 @@ class BoilerSettings extends Page
         $search = mb_strtolower(trim($this->search));
         $params = $catalog->parameters()
             ->filter(fn ($p) => $p['level'] === $this->level)
+            // Réglés sur leur page dédiée : pas de doublon ici
+            ->reject(fn ($p) => in_array($p['name'], self::elsewhere(), true))
             ->filter(fn ($p) => $this->group === 'all' || $p['group'] === $this->group)
             ->filter(fn ($p) => $search === '' || str_contains(mb_strtolower($catalog->label($p).' '.($p['short_fr'] ?? '').' '.$p['name'].' '.($p['description'] ?? '')), $search))
             ->filter(fn ($p) => array_key_exists(self::key($p['name']), $this->values))

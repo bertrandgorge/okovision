@@ -87,6 +87,32 @@ class TimeProgram
         return ['days' => self::decode($raw, self::base($circuit, $program)), 'active' => $active?->ok ? (int) $active->value() : null];
     }
 
+    /** Clé de cache des plages du programme actif d'un circuit (vidée à chaque écriture d'un programme du circuit). */
+    public static function windowsCacheKey(string $circuit): string
+    {
+        return $circuit === 'ww' ? self::DHW_WINDOWS_CACHE : "time_program.windows.{$circuit}";
+    }
+
+    /**
+     * Plages du programme actif d'un circuit (jour 0 = dimanche => [[début, fin] en minutes]), en cache 6 h.
+     *
+     * @return array<int, list<array{0: int, 1: int}>>
+     */
+    public function windows(string $circuit): array
+    {
+        return Cache::remember(self::windowsCacheKey($circuit), now()->addHours(6), function () use ($circuit) {
+            $program = $this->read($circuit, 0);
+
+            return $program['active'] === 1 ? $this->read($circuit, 1)['days'] : $program['days'];
+        });
+    }
+
+    /** @return array<int, list<array{0: int, 1: int}>> */
+    public function dhwWindows(): array
+    {
+        return $this->windows('ww');
+    }
+
     /**
      * Écrit un programme (seules les variables modifiées sont envoyées), relit pour vérifier et journalise.
      *
@@ -101,9 +127,7 @@ class TimeProgram
         }
 
         $base = self::base($circuit, $program);
-        if ($circuit === 'ww') {
-            Cache::forget(self::DHW_WINDOWS_CACHE);
-        }
+        Cache::forget(self::windowsCacheKey($circuit));
         $current = $this->readRaw($circuit, $program);
         $target = self::encode($days, $base);
         $diff = array_filter($target, fn ($v, $name) => ! isset($current[$name]) || (float) $current[$name] !== (float) $v, ARRAY_FILTER_USE_BOTH);
@@ -291,6 +315,52 @@ class TimeProgram
         }
 
         return implode(' · ', $parts);
+    }
+
+    /**
+     * Inverse de summary() (programmes relus depuis le journal des modifications) ; null si le texte n'est pas reconnu.
+     *
+     * @return array<int, list<array{0: int, 1: int}>>|null
+     */
+    public static function parseSummary(?string $text): ?array
+    {
+        if ($text === null || trim($text) === '') {
+            return null;
+        }
+        $abbr = array_flip(self::SHORT_DAYS);
+        $order = array_keys(self::DAYS);
+        $days = array_fill_keys($order, []);
+        foreach (explode(' · ', $text) as $group) {
+            if (! preg_match('/^(.+?) (aucune plage|\d\d:\d\d-\d\d:\d\d(?:, \d\d:\d\d-\d\d:\d\d)*)$/u', trim($group), $m)) {
+                return null;
+            }
+            $slots = [];
+            if ($m[2] !== 'aucune plage') {
+                foreach (explode(', ', $m[2]) as $slot) {
+                    [$a, $b] = explode('-', $slot);
+                    $slots[] = [self::minutes($a), self::minutes($b)];
+                }
+            }
+            $list = [];
+            if ($m[1] === 'Tous les jours') {
+                $list = $order;
+            } else {
+                foreach (explode(', ', $m[1]) as $run) {
+                    $ends = explode('-', $run);
+                    if (! isset($abbr[$ends[0]], $abbr[end($ends)])) {
+                        return null;
+                    }
+                    $i = array_search($abbr[$ends[0]], $order, true);
+                    $j = array_search($abbr[end($ends)], $order, true);
+                    $list = array_merge($list, array_slice($order, $i, $j - $i + 1));
+                }
+            }
+            foreach ($list as $d) {
+                $days[$d] = $slots;
+            }
+        }
+
+        return $days;
     }
 
     /** @param  list<int>  $days  dans l'ordre d'affichage */

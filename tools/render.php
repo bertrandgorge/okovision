@@ -1,5 +1,5 @@
 <?php
-// Rendu d'une page en étant authentifié (outil de développement) : php tools/render.php /journee?date=2026-01-12
+// Rendu d'une page en étant authentifié (outil de développement) : php tools/render.php /?date=2026-01-12
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);

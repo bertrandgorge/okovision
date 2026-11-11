@@ -38,7 +38,7 @@ class DhwTempLowAlertTest extends TestCase
 
     public function test_without_program_the_threshold_applies(): void
     {
-        $this->mock(TimeProgram::class)->shouldReceive('read')->andThrow(new \RuntimeException('injoignable'));
+        $this->mock(TimeProgram::class)->shouldReceive('dhwWindows')->andThrow(new \RuntimeException('injoignable'));
 
         $this->assertTrue($this->evaluateAt('2026-11-05 07:20:00', 37));
     }

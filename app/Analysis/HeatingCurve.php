@@ -149,10 +149,13 @@ final class HeatingCurve
             ->whereBetween('ts', [$from.' 00:00:00', $to.' 23:59:59'])
             ->where('hc1_pump', 1)
             ->where('hc1_flow_set', '>', 15)
-            ->where('hc1_room_set', $roomSet)
+            // en confort, quelle que soit la consigne du moment (à 1 °C près, réduit exclu) : chaque consigne de départ est
+            // ramenée à la consigne de référence, une consigne plus haute d'1 °C relevant le départ de (1 + pente) °C
+            ->whereBetween('hc1_room_set', [$roomSet - 1, $roomSet + 1])
+            ->where('hc1_room_set', '>', $this->roomReduced + 0.25)
             ->whereRaw('MINUTE(ts) % 5 = 0')
-            ->selectRaw('ROUND(outside_temp) as t, COUNT(*) as n, AVG(hc1_flow_set) as flow_set, AVG(hc1_flow_temp) as flow,
-                AVG(hc1_room_temp - hc1_room_set) as dev, AVG(hc1_room_temp) as room')
+            ->selectRaw('ROUND(outside_temp) as t, COUNT(*) as n, AVG(hc1_flow_set + ? * (? - hc1_room_set)) as flow_set, AVG(hc1_flow_temp) as flow,
+                AVG(hc1_room_temp - hc1_room_set) as dev, AVG(hc1_room_temp) as room', [1 + $this->slope, $roomSet])
             ->groupByRaw('ROUND(outside_temp)')
             ->orderBy('t')
             ->get();

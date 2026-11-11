@@ -2,14 +2,13 @@
 
 namespace App\Filament\Pages;
 
-use App\Okofen\BoilerService;
-use App\Okofen\TimeProgram;
+use App\Okofen\Catalog;
+use App\Okofen\SpecialPrograms;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\HtmlString;
-use Livewire\Attributes\Url;
 
 class TimePrograms extends Page
 {
@@ -17,200 +16,119 @@ class TimePrograms extends Page
 
     protected static ?string $navigationLabel = 'Programmes horaires';
 
-    protected static ?string $title = 'Programmes horaires';
+    protected static ?string $title = 'Programmes horaires du chauffage';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Réglages';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $slug = 'programmes';
 
     protected string $view = 'filament.pages.time-programs';
 
-    #[Url]
-    public string $circuit = 'hk';
+    /** Programmes soirée / vacances tels que lus (dates en 'Y-m-d\TH:i'), null si illisibles */
+    public ?array $specials = null;
 
-    #[Url]
-    public int $program = 0;
+    /** Saisie des programmes soirée / vacances */
+    public string $partyEnd = '';
 
-    /** jour => 3 plages ['start' => 'HH:MM' ou '', 'end' => …] (édition) */
-    public array $edit = [];
+    public string $vacationStart = '';
 
-    /** jour => plages en minutes, telles que lues sur la chaudière */
-    public array $current = [];
+    public string $vacationEnd = '';
 
-    public ?int $active = null;
-
-    public ?string $error = null;
+    public ?string $vacationTemp = null;
 
     public function mount(): void
     {
-        $this->load();
+        $this->loadSpecials();
     }
 
-    public function updatedCircuit(): void
+    public function loadSpecials(bool $fresh = false): void
     {
-        $this->circuit = array_key_exists($this->circuit, TimeProgram::CIRCUITS) ? $this->circuit : 'hk';
-        $this->load();
-    }
-
-    public function updatedProgram(): void
-    {
-        $this->program = $this->program === 1 ? 1 : 0;
-        $this->load();
-    }
-
-    public function load(): void
-    {
-        $this->circuit = array_key_exists($this->circuit, TimeProgram::CIRCUITS) ? $this->circuit : 'hk';
-        $this->program = $this->program === 1 ? 1 : 0;
-
+        $f = fn (?CarbonImmutable $t) => $t?->format('Y-m-d\TH:i');
         try {
-            $read = app(TimeProgram::class)->read($this->circuit, $this->program);
-            $this->current = $read['days'];
-            $this->active = $read['active'];
-            $this->error = null;
-        } catch (\Throwable $e) {
-            $this->current = [];
-            $this->active = null;
-            $this->error = $e->getMessage();
+            $r = app(SpecialPrograms::class)->read($fresh);
+        } catch (\Throwable) {
+            $this->specials = null;
+
+            return;
         }
-        $this->edit = self::toEdit($this->current);
+        $this->specials = [
+            'party' => ['active' => $r['party']['active'], 'end' => $f($r['party']['end'])],
+            'vacation' => ['active' => $r['vacation']['active'], 'on' => $r['vacation']['on'], 'start' => $f($r['vacation']['start']), 'end' => $f($r['vacation']['end']), 'temp' => $r['vacation']['temp']],
+        ];
+        $now = CarbonImmutable::now();
+        $this->partyEnd = $r['party']['active'] ? $f($r['party']['end']) : $now->setTime(23, 59)->format('Y-m-d\TH:i');
+        $future = $r['vacation']['on'] && $r['vacation']['end']?->isAfter($now);
+        $this->vacationStart = $future ? $f($r['vacation']['start']) : $now->addDay()->setTime(8, 0)->format('Y-m-d\TH:i');
+        $this->vacationEnd = $future ? $f($r['vacation']['end']) : $now->addDays(8)->setTime(8, 0)->format('Y-m-d\TH:i');
+        $this->vacationTemp = $r['vacation']['temp'] === null ? '15' : (string) $r['vacation']['temp'];
     }
 
-    public function resetEdit(): void
+    public function startParty(): void
     {
-        $this->edit = self::toEdit($this->current);
+        $programs = app(SpecialPrograms::class);
+        $end = $this->parseLocal($this->partyEnd);
+        $this->notifySpecial($end ? $programs->startParty($end, auth()->id()) : ['Heure de fin invalide.'],
+            'Soirée activée jusqu\'au '.($end?->translatedFormat('d M à H:i') ?? ''));
     }
 
-    public function clearDay(int $day): void
+    public function stopParty(): void
     {
-        $this->edit[$day] = self::emptySlots();
+        $programs = app(SpecialPrograms::class);
+        $this->notifySpecial($programs->stopParty(auth()->id()), 'Soirée arrêtée');
     }
 
-    /** Recopie les plages d'un jour sur un ensemble de jours. */
-    public function copyDay(int $from, string $to): void
+    public function startVacation(): void
     {
-        $targets = match ($to) {
-            'weekdays' => [1, 2, 3, 4, 5],
-            'weekend' => [6, 0],
-            default => [0, 1, 2, 3, 4, 5, 6],
+        $programs = app(SpecialPrograms::class);
+        $start = $this->parseLocal($this->vacationStart);
+        $end = $this->parseLocal($this->vacationEnd);
+        $temp = is_numeric($this->vacationTemp) ? (float) $this->vacationTemp : null;
+        $errors = match (true) {
+            $start === null || $end === null => ['Dates invalides.'],
+            $temp === null || $temp < 5 || $temp > 25 => ['Température vacances entre 5 et 25 °C.'],
+            default => $programs->startVacation($start, $end, $temp, auth()->id()),
         };
-        foreach ($targets as $d) {
-            $this->edit[$d] = $this->edit[$from];
+        $this->notifySpecial($errors, 'Vacances programmées du '.($start?->translatedFormat('d M H:i') ?? '').' au '.($end?->translatedFormat('d M H:i') ?? ''));
+    }
+
+    public function stopVacation(): void
+    {
+        $programs = app(SpecialPrograms::class);
+        $this->notifySpecial($programs->stopVacation(auth()->id()), 'Programme vacances arrêté');
+    }
+
+    private function parseLocal(string $value): ?CarbonImmutable
+    {
+        try {
+            return $value === '' ? null : CarbonImmutable::createFromFormat('Y-m-d\TH:i', $value, config('app.timezone'))->startOfMinute();
+        } catch (\Throwable) {
+            return null;
         }
     }
 
-    /** @return array<int, list<array{0: int, 1: int}>>|string  plages en minutes, ou message d'erreur */
-    public function parsed(): array|string
+    /** @param  list<string>  $errors */
+    private function notifySpecial(array $errors, string $success): void
     {
-        $days = [];
-        foreach (array_keys(TimeProgram::DAYS) as $d) {
-            $days[$d] = [];
-            foreach ($this->edit[$d] ?? [] as $slot) {
-                $start = TimeProgram::minutes($slot['start'] ?? null);
-                $end = TimeProgram::minutes($slot['end'] ?? null);
-                if (blank($slot['start'] ?? null) && blank($slot['end'] ?? null)) {
-                    continue;
-                }
-                if ($start === null || $end === null) {
-                    return TimeProgram::DAYS[$d].' : plage incomplète';
-                }
-                $days[$d][] = [$start, $end];
-            }
-        }
-        $days = TimeProgram::normalize($days);
-
-        return TimeProgram::validate($days) ?? $days;
-    }
-
-    public function hasChanges(): bool
-    {
-        $parsed = $this->parsed();
-
-        return is_string($parsed) || $parsed !== TimeProgram::normalize($this->current);
+        $errors
+            ? Notification::make()->title('Échec')->body(implode("\n", $errors))->danger()->persistent()->send()
+            : Notification::make()->title($success)->success()->send();
+        $this->loadSpecials(true);
     }
 
     protected function getHeaderActions(): array
     {
-        $label = fn () => TimeProgram::CIRCUITS[$this->circuit].' – programme '.($this->program + 1);
-
         return [
-            Action::make('reload')->label('Relire')->icon(Heroicon::OutlinedArrowPath)->color('gray')->action(fn () => $this->load()),
-
-            Action::make('activate')
-                ->label(fn () => 'Activer le programme '.($this->program + 1))
-                ->icon(Heroicon::OutlinedCheckCircle)
-                ->color('gray')
-                ->visible(fn () => $this->error === null && $this->active !== null && $this->active !== $this->program)
-                ->requiresConfirmation()
-                ->modalHeading(fn () => 'Utiliser le programme '.($this->program + 1).' pour : '.TimeProgram::CIRCUITS[$this->circuit].' ?')
-                ->action(function () {
-                    $results = app(BoilerService::class)->apply([TimeProgram::activeVariable($this->circuit) => $this->program], 'manual', auth()->id());
-                    $failed = array_filter($results, fn ($r) => $r['status'] !== 'applied');
-                    $failed
-                        ? Notification::make()->title('Changement refusé')->body(implode("\n", array_column($failed, 'message')))->danger()->persistent()->send()
-                        : Notification::make()->title('Programme '.($this->program + 1).' activé')->success()->send();
-                    $this->load();
-                }),
-
-            Action::make('apply')
-                ->label('Appliquer')
-                ->icon(Heroicon::OutlinedPaperAirplane)
-                ->disabled(fn () => $this->error !== null || ! $this->hasChanges() || is_string($this->parsed()))
-                ->requiresConfirmation()
-                ->modalHeading(fn () => 'Écrire ce programme sur la chaudière ? ('.$label().')')
-                ->modalDescription(fn () => is_string($p = $this->parsed()) ? $p : new HtmlString(
-                    '<div class="text-start text-sm space-y-2"><div><strong>Actuel</strong> : '.e(TimeProgram::summary($this->current)).'</div>'
-                    .'<div><strong>Nouveau</strong> : '.e(TimeProgram::summary($p)).'</div></div>'))
-                ->action(function () {
-                    $parsed = $this->parsed();
-                    if (is_string($parsed)) {
-                        Notification::make()->title($parsed)->danger()->send();
-
-                        return;
-                    }
-                    $r = app(TimeProgram::class)->write($this->circuit, $this->program, $parsed, auth()->id());
-                    $r['ok']
-                        ? Notification::make()->title('Programme enregistré sur la chaudière')->body($r['changed'].' valeur(s) écrite(s) et vérifiée(s).')->success()->send()
-                        : Notification::make()->title('Écriture incomplète')->body($r['message'])->danger()->persistent()->send();
-                    $this->load();
-                }),
+            Action::make('reload')->label('Relire')->icon(Heroicon::OutlinedArrowPath)->color('gray')
+                ->action(fn () => $this->redirect(self::getUrl(), navigate: true)),
         ];
     }
 
     protected function getViewData(): array
     {
-        $parsed = $this->parsed();
-
         return [
-            'circuits' => TimeProgram::CIRCUITS,
-            'days' => TimeProgram::DAYS,
-            'parsed' => $parsed,
-            'invalid' => is_string($parsed) ? $parsed : null,
-            'changed' => $this->error === null && $this->hasChanges(),
-            'summary' => TimeProgram::summary($this->current),
+            'vacationParam' => app(Catalog::class)->parameter(SpecialPrograms::VACATION_TEMP),
         ];
-    }
-
-    /** @return list<array{start: string, end: string}> */
-    private static function emptySlots(): array
-    {
-        return array_fill(0, TimeProgram::SLOTS, ['start' => '', 'end' => '']);
-    }
-
-    /** @param  array<int, list<array{0: int, 1: int}>>  $days */
-    private static function toEdit(array $days): array
-    {
-        $edit = [];
-        foreach (array_keys(TimeProgram::DAYS) as $d) {
-            $slots = self::emptySlots();
-            foreach (array_values($days[$d] ?? []) as $i => [$a, $b]) {
-                $slots[$i] = ['start' => TimeProgram::time($a), 'end' => TimeProgram::time($b)];
-            }
-            $edit[$d] = $slots;
-        }
-
-        return $edit;
     }
 }

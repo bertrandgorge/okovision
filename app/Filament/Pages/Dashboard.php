@@ -3,20 +3,25 @@
 namespace App\Filament\Pages;
 
 use App\Analysis\Advisor;
+use App\Analysis\HeatingStatus;
 use App\Analysis\StockEstimator;
 use App\Charts\ChartFactory;
 use App\Diagnostics\ReportToken;
 use App\Models\AlertEvent;
+use App\Models\BurnerCycle;
 use App\Models\DailyStat;
 use App\Okofen\BoilerService;
 use App\Okofen\Catalog;
 use App\Okofen\MeasurementImporter;
+use App\Okofen\SpecialPrograms;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Url;
 
 class Dashboard extends BaseDashboard
 {
@@ -30,9 +35,59 @@ class Dashboard extends BaseDashboard
 
     protected string $view = 'filament.pages.dashboard';
 
+    /** Journée détaillée affichée sous les indicateurs (par défaut : celle de la dernière mesure) */
+    #[Url]
+    public ?string $date = null;
+
+    public function mount(): void
+    {
+        if (! $this->date || ! strtotime($this->date)) {
+            $last = DB::table('measurements')->max('ts');
+            $this->date = $last ? substr($last, 0, 10) : now()->format('Y-m-d');
+        }
+    }
+
+    public function previous(): void
+    {
+        $this->date = CarbonImmutable::parse($this->date)->subDay()->format('Y-m-d');
+    }
+
+    public function next(): void
+    {
+        $next = CarbonImmutable::parse($this->date)->addDay();
+        if ($next->isAfter(now()->endOfDay())) {
+            return;
+        }
+        $this->date = $next->format('Y-m-d');
+    }
+
+    /** @var array{active: bool, until: ?CarbonImmutable}|null|false false = pas encore lu */
+    private array|null|false $party = false;
+
     public function getHeaderActions(): array
     {
         return [
+            Action::make('party')
+                ->label('Soirée ce soir')
+                ->icon(Heroicon::OutlinedMoon)
+                ->color('gray')
+                ->visible(fn () => ! ($this->partyState()['active'] ?? false))
+                ->requiresConfirmation()
+                ->modalHeading('Programmer une soirée ce soir ?')
+                ->modalDescription('Le chauffage reste en confort, sans abaissement, jusqu\'à 23:59 ce soir.')
+                ->modalSubmitActionLabel('Activer')
+                ->action(fn (SpecialPrograms $programs) => $this->notifyParty(
+                    $programs->startParty(CarbonImmutable::now()->setTime(23, 59), auth()->id()), 'Soirée activée jusqu\'à 23:59')),
+            Action::make('partyStop')
+                ->label(fn () => 'Soirée jusqu\'à '.$this->partyState()['until']?->format('H:i'))
+                ->icon(Heroicon::OutlinedMoon)
+                ->color('success')
+                ->visible(fn () => $this->partyState()['active'] ?? false)
+                ->requiresConfirmation()
+                ->modalHeading('Arrêter la soirée ?')
+                ->modalDescription('Le chauffage reprend son programme horaire habituel.')
+                ->modalSubmitActionLabel('Arrêter')
+                ->action(fn (SpecialPrograms $programs) => $this->notifyParty($programs->stopParty(auth()->id()), 'Soirée arrêtée')),
             Action::make('llm')
                 ->label('Rapport pour LLM')
                 ->icon(Heroicon::OutlinedDocumentText)
@@ -56,18 +111,38 @@ class Dashboard extends BaseDashboard
         ];
     }
 
+    /**
+     * Programme soirée du circuit de chauffage (lecture mise en cache 2 min ; null si la chaudière ne répond pas).
+     *
+     * @return array{active: bool, until: ?CarbonImmutable}|null
+     */
+    private function partyState(): ?array
+    {
+        if ($this->party === false) {
+            $party = rescue(fn () => app(SpecialPrograms::class)->read()['party'], null, report: false);
+            $this->party = $party === null ? null : ['active' => $party['active'], 'until' => $party['end']];
+        }
+
+        return $this->party;
+    }
+
+    /** @param  list<string>  $errors */
+    private function notifyParty(array $errors, string $success): void
+    {
+        $this->party = false;
+        $errors
+            ? Notification::make()->title('Échec')->body(implode("\n", $errors))->danger()->send()
+            : Notification::make()->title($success)->success()->send();
+    }
+
     protected function getViewData(): array
     {
         $live = app(BoilerService::class)->live();
         $last = DB::table('measurements')->orderByDesc('ts')->first();
-        $today = DailyStat::query()->find(now()->format('Y-m-d'));
-        $yesterday = DailyStat::query()->find(now()->subDay()->format('Y-m-d'));
         $stock = app(StockEstimator::class);
-        $charts = app(ChartFactory::class);
 
-        $day = $last ? substr($last->ts, 0, 10) : now()->format('Y-m-d');
-        $range = $this->dayRange($live['values'] ?? [], $day);
-        $dayCharts = $charts->day($day);
+        $lastDay = $last ? substr($last->ts, 0, 10) : now()->format('Y-m-d');
+        $range = $this->dayRange($live['values'] ?? [], $lastDay);
 
         // Les recommandations ne nécessitent pas la chaudière : on utilise les derniers réglages connus (cache)
         $advice = Cache::remember('okovision.dashboard.advice', now()->addHours(3), function () {
@@ -96,14 +171,15 @@ class Dashboard extends BaseDashboard
                 in_array((int) $status, [1, 2, 3, 5], true) => 'warning',
                 default => 'gray',
             },
-            'today' => $today,
-            'yesterday' => $yesterday,
             'silo' => $stock->silo(),
             'ash' => $stock->ashBox(),
-            'day' => $day,
             'range' => $range,
-            'dayCharts' => $dayCharts,
-            'charts' => $charts,
+            'dayCharts' => app(ChartFactory::class)->day($this->date),
+            'isToday' => $this->date === now()->format('Y-m-d'),
+            'dayStat' => DailyStat::query()->find($this->date),
+            'prevStat' => DailyStat::query()->find(CarbonImmutable::parse($this->date)->subDay()->format('Y-m-d')),
+            'cycles' => BurnerCycle::query()->where('day', $this->date)->orderBy('started_at')->get(),
+            'heating' => rescue(fn () => app(HeatingStatus::class)->explain(), null, report: false),
             'alerts' => AlertEvent::query()->whereNull('resolved_at')->latest('triggered_at')->limit(5)->get(),
             'advice' => $advice,
         ];

@@ -486,6 +486,20 @@ live:
     de: Vorlauftemperatur Soll
   divisor: 10
   unit: °C
+- key: hc1_room_set
+  name: "CAPPL:LOCAL.L_hk[0].raumtemp_soll"
+  labels:
+    fr: T ambiante consigne
+    en: Room Temp Set
+    de: Raumtemperatur Soll
+  divisor: 10
+  unit: °C
+- key: hc1_pump
+  name: "CAPPL:LOCAL.L_hk[0].pumpe"
+  labels:
+    fr: Pompe chauffage
+    en: Heating Pump
+    de: Heizkreispumpe
 - key: dhw1_temp
   name: "CAPPL:LOCAL.L_ww[0].einschaltfuehler_ist"
   labels:
@@ -567,6 +581,9 @@ parameters:
   level: basic
   description: Durée de moyennage de la T extérieure utilisée pour les limites de chauffe.
   writable: true
+  advice:
+    range: [60, 180]
+    why: "Moyenne glissante de la T ext utilisée pour les limites de chauffe et la loi d'eau : évite de couper au moindre rayon de soleil sur la sonde. 0 = valeur instantanée (manuel E1389FR p. 68)."
 - name: "CAPPL:LOCAL.hk[0].betriebsart[1]"
   group: modes
   type: enum
@@ -598,6 +615,10 @@ parameters:
   level: basic
   description: Consigne d'ambiance en période réduite (nuit/absence).
   writable: true
+  advice:
+    range: [15, 19]
+    factory: 18
+    why: "2 à 5 °C sous le confort sur radiateurs (2 °C au plus sur plancher chauffant) : un écart plus grand rend la relance du matin longue et puissante (guide entretien ÖkoFEN)."
 - name: "CAPPL:LOCAL.hk[0].raumtemp_heizen"
   group: modes
   type: temperature
@@ -613,6 +634,10 @@ parameters:
   level: basic
   description: Consigne d'ambiance en période de confort. Chaque °C modifie la consigne de départ de (1 + pente) °C.
   writable: true
+  advice:
+    range: [19, 21]
+    factory: 22
+    why: "Chaque degré de plus coûte environ 7 % de granulés ; au-delà de 21 °C, ÖkoFEN conseille plutôt de revoir la loi d'eau (guide entretien ÖkoFEN). Avec une hystérésis d'ambiance de 1 °C, viser ici 0,5 °C sous la température souhaitée."
 - name: "CAPPL:LOCAL.ke_temp_min"
   group: modes
   type: temperature
@@ -628,6 +653,10 @@ parameters:
   level: basic
   description: Température chaudière minimale demandée dès qu'un circuit chauffe (protection contre la condensation).
   writable: true
+  advice:
+    range: [60, 70]
+    factory: 60
+    why: "Protège la chaudière de la condensation (retours froids) : jamais sous 60 °C sans ballon tampon (manuel E1389FR p. 68)."
 - name: "CAPPL:LOCAL.ww[0].betriebsart[1]"
   group: modes
   type: enum
@@ -685,8 +714,12 @@ parameters:
     de: Wassertemp Min
   short_fr: T min ECS
   level: basic
-  description: "Température ECS minimale hors plages horaires : le ballon est rechargé s'il descend sous cette valeur."
+  description: "Température ECS minimale hors plages horaires : le ballon n'est rechargé que s'il descend sous cette valeur moins l'hystérésis ECS."
   writable: true
+  advice:
+    range: [30, 45]
+    factory: 30
+    why: "Hors plages, le ballon n'est rechargé que sous cette valeur moins l'hystérésis : plus bas = moins de charges, mais eau tiède hors plages."
 - name: "CAPPL:LOCAL.ww[0].temp_heizen"
   group: modes
   type: temperature
@@ -702,6 +735,10 @@ parameters:
   level: basic
   description: Consigne d'eau chaude pendant les plages horaires ECS. Recommandé ≥ 50 °C (légionelles).
   writable: true
+  advice:
+    range: [50, 60]
+    factory: 60
+    why: "Sous 50 °C, les légionelles survivent dans le ballon ; 52–55 °C est un bon compromis. Au-delà de 60 °C, risque de brûlure sans mitigeur thermostatique."
 - name: "CAPPL:FA[0].L_fehler_ruecksetzen"
   group: modes
   type: enum
@@ -729,6 +766,10 @@ parameters:
   short_fr: T Protection
   level: expert
   writable: true
+  advice:
+    range: [2, 4]
+    factory: 4
+    why: "Sous cette T ext, la circulation est forcée régulièrement dans les circuits pour éviter le gel (manuel E1389FR p. 69)."
 - name: "CAPPL:LOCAL.frostschutz_spuelzeit"
   group: modes
   type: number
@@ -1194,8 +1235,12 @@ parameters:
     de: Heizgrenze Absenken
   short_fr: Lim Text réduit
   level: basic
-  description: "Limite de chauffe en réduit : au-dessus de cette T ext moyennée, le circuit s'arrête en période réduite."
+  description: "Limite de chauffe en réduit : pendant une plage réduit, le circuit s'arrête si la T ext moyennée dépasse cette valeur, et repart 2 °C en dessous. ÖkoFEN conseille 0 °C (très isolée) à 14 °C (peu isolée) : l'anticipation relance de toute façon avant le confort."
   writable: true
+  advice:
+    range: [0, 12]
+    factory: -5
+    why: "Repères ÖkoFEN selon l'isolation : 0 °C (très isolée), 5 °C (bien isolée), 10 °C (moyennement isolée), 14 °C (peu isolée). Il est souvent inutile de chauffer la nuit : l'anticipation relance avant la plage de confort (guide entretien ÖkoFEN)."
 - name: "CAPPL:LOCAL.hk[0].heizgrenze_heizen"
   group: hc
   type: temperature
@@ -1209,8 +1254,12 @@ parameters:
     de: Heizgrenze Heizen
   short_fr: Lim Text confort
   level: basic
-  description: "Limite de chauffe en confort : au-dessus de cette T ext moyennée, le circuit s'arrête. Pour une maison isolée : 15–17 °C."
+  description: "Limite de chauffe en confort : pendant une plage confort, le circuit s'arrête si la T ext moyennée dépasse cette valeur, et repart quand elle redescend 2 °C en dessous (manuel E1389FR p. 21). Usine : 18 °C ; maison isolée : 15–17 °C."
   writable: true
+  advice:
+    range: [15, 18]
+    factory: 18
+    why: "Au-dessus de cette T ext moyenne, plus besoin de chauffer en journée ; relance 2 °C en dessous. 15–17 °C pour une maison isolée : au-delà, la chaudière enchaîne des cycles très courts pour quelques kWh."
 - name: "CAPPL:LOCAL.hk[0].heizkurve_fusspunkt"
   group: hc
   type: temperature
@@ -1227,6 +1276,10 @@ parameters:
   description: "Pied de courbe : température de départ pour une T ext de 15 °C (avec 20 °C de consigne ambiante). Il décale la courbe parallèlement.\
     \ À ajuster (par pas de 2 à 5 °C) quand il fait trop chaud ou trop froid par T ext de +5 à +15 °C."
   writable: true
+  advice:
+    range: [25, 40]
+    factory: 20
+    why: "Départ à 15 °C extérieur ; décale toute la courbe. Se règle à mi-saison (T ext entre 5 et 15 °C), au plus une fois par jour (manuel E1389FR p. 22)."
 - name: "CAPPL:LOCAL.hk[0].heizkurve_steigung"
   group: hc
   type: number
@@ -1243,6 +1296,10 @@ parameters:
   description: "Pente de la loi d'eau : nombre de °C de départ en plus pour 1 °C extérieur en moins. Convecteurs à ailettes : typiquement 1,2\
     \ à 1,8. Ajuster par pas de 0,1–0,2, au plus une fois par jour, lorsque la T ext est entre -20 et +5 °C."
   writable: true
+  advice:
+    range: [0.8, 1.8]
+    factory: 0.4
+    why: "Indicatif : 0,3–0,8 sur plancher chauffant, 0,8–1,8 sur radiateurs / convecteurs. Se règle quand il fait froid (T ext < 5 °C), par pas de 0,2, au plus une fois par jour (manuel E1389FR p. 22)."
 - name: "CAPPL:LOCAL.hk[0].partyprg_aktiviert"
   group: hc
   type: enum
@@ -1255,7 +1312,7 @@ parameters:
     0: Arrêt
     1: Marche
   level: basic
-  description: "Programme soirée : prolonge le confort."
+  description: "Programme soirée : force le confort jusqu'à l'heure de fin, puis revient seul sur Arrêt. Il ne contourne ni la limite de chauffe ni l'hystérésis d'ambiance."
   writable: true
 - name: "CAPPL:LOCAL.hk[0].raumfuehler_einfluss"
   group: hc
@@ -1269,9 +1326,12 @@ parameters:
     de: Raumfühlereinfluss
   short_fr: FactCor amb
   level: basic
-  description: "Influence de la sonde d'ambiance : °C de départ ajoutés par °C d'écart entre consigne et ambiance mesurée. 0 = loi d'eau pure.\
-    \ 2–4 recommandé si la sonde est dans une pièce représentative sans autre source de chaleur."
+  description: "Influence de la sonde d'ambiance : coefficient sans unité, degrés ajoutés (ou retirés) au départ par degré d'écart entre consigne et pièce. Départ corrigé = loi d'eau + influence × (consigne − T ambiante). 0 = la sonde n'agit plus sur le départ."
   writable: true
+  advice:
+    range: [1, 3]
+    factory: 1
+    why: "À mettre à 0 pendant le réglage de la loi d'eau, puis à remettre (manuel E1389FR p. 23)."
 - name: "CAPPL:LOCAL.hk[0].raumtemp_plus"
   group: hc
   type: number
@@ -1286,8 +1346,12 @@ parameters:
     de: Raumtemp Hysterese
   short_fr: T ambiante Hystérésis
   level: basic
-  description: "Hystérésis d'ambiance : la pompe du circuit s'arrête lorsque T ambiante > consigne + hystérésis. 0 = désactivé."
+  description: "Hystérésis d'ambiance : le circuit s'arrête quand T ambiante > consigne + hystérésis et ne repart que 1 °C sous ce seuil. À 0, il s'arrête dès la consigne atteinte et repart 1 °C en dessous (ce n'est pas « désactivé »). 0 seulement si forts apports (soleil, poêle) dans la pièce de la sonde ; sinon une valeur plus grande est conseillée (manuel E1389FR p. 23)."
   writable: true
+  advice:
+    range: [1, 2]
+    factory: 0
+    why: "À 0, le circuit s'arrête dès la consigne atteinte et ne repart que 1 °C dessous : il peut rester éteint des heures. 0 seulement si forts apports (soleil, poêle) dans la pièce de la sonde ; sinon une valeur supérieure est recommandée (manuel E1389FR p. 23)."
 - name: "CAPPL:LOCAL.hk[0].raumtemp_urlaub"
   group: hc
   type: temperature
@@ -1303,6 +1367,10 @@ parameters:
   level: basic
   description: Consigne d'ambiance pendant le programme vacances.
   writable: true
+  advice:
+    range: [12, 16]
+    factory: 15
+    why: "Assez bas pour économiser (chaque degré ≈ 7 % de granulés), assez haut pour éviter l'humidité et une relance trop longue au retour. En dessous de 10 °C, risque de condensation sur les murs froids."
 - name: "CAPPL:LOCAL.hk[0].ueberhoehung"
   group: hc
   type: number
@@ -1319,6 +1387,10 @@ parameters:
   level: basic
   description: "Surélévation : écart ajouté à la consigne de départ pour obtenir la consigne chaudière (compense la vanne mélangeuse)."
   writable: true
+  advice:
+    range: [3, 10]
+    factory: 5
+    why: "Réserve ajoutée au départ calculé pour la consigne chaudière : compense la vanne mélangeuse (manuel E1389FR p. 56)."
 - name: "CAPPL:LOCAL.hk[0].urlaubsprg_aktiviert"
   group: hc
   type: enum
@@ -1346,8 +1418,12 @@ parameters:
     de: Vorhaltezeit
   short_fr: t anticip
   level: basic
-  description: "Temps d'anticipation : démarrage du chauffage avant le début de la plage confort."
+  description: "Durée d'anticipation : la chaudière démarre en avance, selon la T ext, pour atteindre la consigne au début de la plage confort ; inutile d'avancer la plage soi-même. Usine : 180 min."
   writable: true
+  advice:
+    range: [45, 180]
+    factory: 180
+    why: "Plus la nuit est fraîche (limite de réduit basse), plus l'anticipation doit être longue pour être à la consigne au début de la plage. À allonger si la maison est froide au réveil."
 - name: "CAPPL:LOCAL.hk[0].vorlauftemp_max"
   group: hc
   type: temperature
@@ -1363,6 +1439,10 @@ parameters:
   level: basic
   description: Température de départ maximale du circuit (sécurité émetteurs).
   writable: true
+  advice:
+    range: [55, 75]
+    factory: 55
+    why: "Radiateurs : 60–75 °C. Plancher chauffant : 45–55 °C au plus (protection de la dalle)."
 - name: "CAPPL:LOCAL.hk[0].vorlauftemp_min"
   group: hc
   type: temperature
@@ -1378,6 +1458,10 @@ parameters:
   level: basic
   description: Température de départ minimale lorsque le circuit chauffe.
   writable: true
+  advice:
+    range: [20, 35]
+    factory: 20
+    why: "Évite un départ trop tiède par temps doux ; trop haut, il force la chauffe quand la loi d'eau demanderait moins."
 - name: "CAPPL:LOCAL.hk[0].estrich_aktiviert"
   group: hc
   type: enum
@@ -2000,9 +2084,12 @@ parameters:
     de: Einschalthysterese
   short_fr: Hystérésis
   level: basic
-  description: "Hystérésis ECS : la charge démarre quand la T du ballon descend de cette valeur sous la consigne. Une valeur plus grande espace\
-    \ les démarrages."
+  description: "Hystérésis ECS : une charge démarre quand le ballon descend de cette valeur sous la cible (consigne pendant les plages, T mini en dehors). Une valeur plus grande espace les démarrages."
   writable: true
+  advice:
+    range: [5, 10]
+    factory: 5
+    why: "Une hystérésis de 8–10 K recharge le ballon en une seule fois après les puisages au lieu de plusieurs petites charges : moins de démarrages, surtout en été."
 - name: "CAPPL:LOCAL.ww[0].legionellen_wochentag"
   group: dhw
   type: enum
@@ -2021,8 +2108,12 @@ parameters:
     6: Samedi
     7: Arrêt
   level: basic
-  description: Jour du cycle anti-légionelles hebdomadaire (montée à ~65 °C).
+  description: "Jour du cycle anti-légionelles : ce jour-là, le ballon monte à 65 °C."
   writable: true
+  advice:
+    allowed: [0, 1, 2, 3, 4, 5, 6]
+    factory: 1
+    why: "Un jour par semaine, le ballon monte à 65 °C : indispensable si la consigne est sous 55 °C ou si le ballon reste longtemps tiède. Choisir un jour de présence (forte consommation ensuite)."
 - name: "CAPPL:LOCAL.ww[0].prioritaet"
   group: dhw
   type: enum
@@ -2035,8 +2126,11 @@ parameters:
     0: Marche
     1: Arrêt
   level: basic
-  description: "Priorité ECS : le circuit de chauffage est réduit pendant la charge du ballon."
+  description: "Priorité ECS : sur Marche, la chaudière charge d'abord le ballon et coupe le chauffage jusqu'à la consigne ECS ; sur Arrêt, chauffage et ECS sont alimentés en même temps."
   writable: true
+  advice:
+    factory: 0
+    why: "Marche (usine) : la chaudière charge d'abord le ballon puis revient au chauffage, charges plus courtes. Arrêt : chauffage et ballon en parallèle ; avec une chaudière surdimensionnée, le chauffage absorbe une partie de la puissance pendant la charge, ce qui allonge les combustions. Les deux se défendent : à juger sur le confort (eau chaude assez vite ?) et le nombre de cycles."
 - name: "CAPPL:LOCAL.ww[0].ueberhoehung"
   group: dhw
   type: number
@@ -2051,8 +2145,12 @@ parameters:
     de: Überhöhung
   short_fr: Augmentation
   level: basic
-  description: "Surélévation ECS : écart chaudière/ballon pendant la charge."
+  description: "Augmentation ECS : la consigne chaudière pendant une charge vaut consigne ECS + augmentation (ex. 60 + 5 = 65 °C)."
   writable: true
+  advice:
+    range: [5, 10]
+    factory: 10
+    why: "Consigne chaudière pendant la charge = consigne ECS + augmentation : assez pour que le serpentin transmette la chaleur (manuel E1389FR p. 59)."
 - name: "CAPPL:LOCAL.ww[0].nachlaufzeit"
   group: dhw
   type: number
@@ -2067,7 +2165,12 @@ parameters:
     de: Nachlaufzeit
   short_fr: t postfonct
   level: expert
+  description: "Postfonctionnement ECS : après la charge, le circulateur du ballon tourne encore ce temps pour y transférer la chaleur résiduelle de la chaudière (il s'arrête si la chaudière devient plus froide que le ballon). C'est ce qui fait dépasser la consigne ECS."
   writable: true
+  advice:
+    range: [3, 10]
+    factory: 10
+    why: "3–5 min quand le chauffage tourne (la chaleur résiduelle va aux radiateurs), 10 min en été (le ballon est le seul stockage). Plus long = ballon au-dessus de la consigne."
 - name: "CAPPL:FA[0].pe_abschalttemperatur"
   group: boiler
   type: temperature
@@ -2084,6 +2187,10 @@ parameters:
   level: basic
   description: "Température de coupure : le brûleur s'arrête quand la chaudière l'atteint."
   writable: true
+  advice:
+    range: [76, 85]
+    factory: 76
+    why: "Le brûleur s'arrête à cette température. Plus haut = cycles plus longs (plus d'énergie stockée dans l'eau de la chaudière) ; rester nettement sous la sécurité (95 °C)."
 - name: "CAPPL:FA[0].pe_einschalthysterese_smart"
   group: boiler
   type: temperature
@@ -2100,6 +2207,9 @@ parameters:
   description: "Hystérésis de redémarrage : le brûleur redémarre quand T chaudière < T coupure − hystérésis (s'il y a une demande). Augmenter\
     \ cette valeur réduit le nombre de démarrages (cycles plus longs)."
   writable: true
+  advice:
+    range: [8, 15]
+    why: "Écart sous la température de coupure avant de relancer le brûleur. Une grande hystérésis espace les démarrages (moins d'allumages, moins d'usure et d'imbrûlés), sans descendre sous T mini chaudière + 5 °C."
 - name: "CAPPL:FA[0].pe_kesseltemperatur_soll"
   group: boiler
   type: temperature
@@ -3470,6 +3580,10 @@ parameters:
   level: expert
   description: T chaudière à partir de laquelle la pompe chaudière démarre.
   writable: true
+  advice:
+    range: [60, 70]
+    factory: 60
+    why: "Les pompes ne démarrent qu'au-dessus de cette température : jamais sous 60 °C sans ballon tampon (manuel E1389FR p. 68)."
 - name: "CAPPL:FA[0].uw_nachlaufzeit"
   group: pump
   type: number

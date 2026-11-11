@@ -2,6 +2,8 @@
 
 namespace App\Okofen;
 
+use Carbon\CarbonImmutable;
+
 /**
  * Valeur lue sur l'API KEBA (index.cgi?action=get&attr=1).
  */
@@ -103,6 +105,21 @@ final class BoilerValue
         $raw = $divisor && $divisor != 0.0 ? $value * $divisor : $value;
 
         return (string) (int) round($raw);
+    }
+
+    /**
+     * Horodatages de la chaudière (type datetime du catalogue) : secondes depuis 1970 en heure LOCALE comptée comme
+     * de l'UTC (l'horloge de la chaudière, CAPPL:LOCAL.L_fernwartung_uhrzeit_neu, est en avance d'une heure sur
+     * time() en hiver).
+     */
+    public static function toBoilerTime(\DateTimeInterface $local): int
+    {
+        return CarbonImmutable::parse($local->format('Y-m-d H:i:s'), 'UTC')->timestamp;
+    }
+
+    public static function fromBoilerTime(float|int|string $raw): CarbonImmutable
+    {
+        return CarbonImmutable::parse(gmdate('Y-m-d H:i:s', (int) $raw), config('app.timezone'));
     }
 
     private static function number(mixed $v): ?float

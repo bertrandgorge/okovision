@@ -42,7 +42,7 @@
                     <li class="grid gap-x-4 gap-y-2 py-3 md:grid-cols-[3rem_11rem_1fr_auto]">
                         <div class="font-semibold text-[#7c3aed]">⚙ {{ $note['n'] }}</div>
                         <div class="text-sm">
-                            <x-filament::link :href="\App\Filament\Pages\DayView::getUrl(['date' => $note['day']])">
+                            <x-filament::link :href="\App\Filament\Pages\Dashboard::getUrl(['date' => $note['day']])">
                                 {{ \Carbon\Carbon::parse($note['from'])->translatedFormat('D d M Y') }}
                             </x-filament::link>
                             <div class="text-xs text-gray-500">

@@ -12,7 +12,6 @@ use App\Okofen\BoilerService;
 use App\Okofen\Catalog;
 use App\Okofen\TimeProgram;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -234,19 +233,11 @@ class AlertEvaluator
      */
     private function dhwWindows(): ?array
     {
-        $cached = Cache::get(TimeProgram::DHW_WINDOWS_CACHE);
-        if ($cached !== null) {
-            return $cached;
-        }
         try {
-            $program = $this->timePrograms->read('ww', 0);
-            $days = $program['active'] === 1 ? $this->timePrograms->read('ww', 1)['days'] : $program['days'];
+            return $this->timePrograms->dhwWindows();
         } catch (\Throwable) {
             return null;
         }
-        Cache::put(TimeProgram::DHW_WINDOWS_CACHE, $days, now()->addHours(6));
-
-        return $days;
     }
 
     private function shortCycling(int $max): AlertResult

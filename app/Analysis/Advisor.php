@@ -2,6 +2,7 @@
 
 namespace App\Analysis;
 
+use App\Okofen\TimeProgram;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,6 +26,11 @@ class Advisor
         'dhw_hyst' => 'CAPPL:LOCAL.ww[0].hysterese',
         'legionella' => 'CAPPL:LOCAL.ww[0].legionellen_wochentag',
         'limit_comfort' => 'CAPPL:LOCAL.hk[0].heizgrenze_heizen',
+        'limit_reduced' => 'CAPPL:LOCAL.hk[0].heizgrenze_absenken',
+        'room_comfort' => 'CAPPL:LOCAL.hk[0].raumtemp_heizen',
+        'room_reduced' => 'CAPPL:LOCAL.hk[0].raumtemp_absenken',
+        'room_hyst' => 'CAPPL:LOCAL.hk[0].raumtemp_plus',
+        'room_influence' => 'CAPPL:LOCAL.hk[0].raumfuehler_einfluss',
     ];
 
     public function __construct(private readonly EnergySignature $signature) {}
@@ -207,10 +213,134 @@ class Advisor
             ];
         }
 
+        array_push($recs, ...$this->heatingCircuitAdvice($params));
+
         $order = ['critical' => 0, 'warning' => 1, 'info' => 2];
         usort($recs, fn ($a, $b) => $order[$a['severity']] <=> $order[$b['severity']]);
 
         return ['period' => compact('from', 'to'), 'stats' => $stats, 'load' => $load, 'recommendations' => $recs];
+    }
+
+    /**
+     * Réglages du circuit de chauffage au regard des règles du régulateur et des conseils ÖkoFEN
+     * (docs/REGULATION-OKOFEN.md §2).
+     *
+     * @param  array<string, float|int|null>  $params
+     * @return list<array<string, mixed>>
+     */
+    public function heatingCircuitAdvice(array $params, ?array $windows = null): array
+    {
+        $recs = [];
+        $num = fn (string $k) => isset($params[$k]) && is_numeric($params[$k]) ? (float) $params[$k] : null;
+        $comfort = $num('room_comfort');
+        $reduced = $num('room_reduced');
+        $hyst = $num('room_hyst');
+        $influence = $num('room_influence');
+        $limitReduced = $num('limit_reduced');
+        $fmt = fn (float $x) => rtrim(rtrim(number_format($x, 1, ',', ''), '0'), ',');
+
+        // Hystérésis d'ambiance à 0 : arrêt dès la consigne, relance 1 °C dessous
+        if ($hyst !== null && $hyst < 0.5 && $comfort !== null && ($influence ?? 0) > 0) {
+            $newComfort = $comfort - 0.5;
+            $recs[] = [
+                'id' => 'room_hysteresis',
+                'category' => 'comfort',
+                'severity' => 'warning',
+                'level' => 'basic',
+                'title' => 'Hystérésis d\'ambiance à '.$fmt($hyst).' °C : le chauffage s\'arrête dès la consigne atteinte',
+                'summary' => 'Le circuit s\'arrête quand la pièce dépasse consigne + hystérésis, et ne repart que 1 °C sous ce seuil. Avec 0, il se coupe à '.$fmt($comfort).' °C et attend '.$fmt($comfort - 1).' °C : une coupure du programme, un peu de soleil ou un retour de réduit suffit à le laisser éteint pendant des heures.',
+                'details' => [
+                    'Le manuel ÖkoFEN (E1389FR p. 23) ne conseille 0 qu\'en cas de forts apports (soleil, poêle) dans la pièce de la sonde ; « dans les autres cas, une valeur supérieure est recommandée ».',
+                    'Proposé : hystérésis 1 °C et consigne confort '.$fmt($newComfort).' °C. Le circuit reste en marche entre '.$fmt($newComfort).' et '.$fmt($newComfort + 1).' °C ; à l\'intérieur, c\'est l\'influence de la sonde d\'ambiance (×'.$fmt((float) $influence).') qui ajuste en continu la température de départ, au lieu d\'un marche/arrêt.',
+                    'La plage tenue garde la même largeur (1 °C) : elle est seulement centrée sur la température voulue.',
+                ],
+                'changes' => [self::P['room_hyst'] => 1, self::P['room_comfort'] => $newComfort],
+            ];
+        }
+
+        // Plages de programme hachées
+        try {
+            $windows ??= app(TimeProgram::class)->windows('hk');
+        } catch (\Throwable) {
+            $windows = null;
+        }
+        $issues = [];
+        foreach (TimeProgram::DAYS as $d => $name) {
+            $slots = $windows[$d] ?? [];
+            foreach ($slots as $i => [$a, $b]) {
+                if ($b - $a < 120) {
+                    $issues[$name][] = 'plage '.TimeProgram::time($a).'–'.TimeProgram::time($b).' de moins de 2 h';
+                }
+                if ($i > 0 && $a - $slots[$i - 1][1] < 120) {
+                    $issues[$name][] = 'coupure '.TimeProgram::time($slots[$i - 1][1]).'–'.TimeProgram::time($a).' de moins de 2 h';
+                }
+            }
+        }
+        if ($issues !== []) {
+            $first = array_key_first($issues);
+            $recs[] = [
+                'id' => 'fragmented_program',
+                'category' => 'comfort',
+                'severity' => 'warning',
+                'level' => 'basic',
+                'title' => 'Programme de chauffage haché ('.count($issues).' jour'.(count($issues) > 1 ? 's' : '').')',
+                'summary' => 'ÖkoFEN déconseille de hacher les plages de confort et de réduit. Une courte coupure bascule le circuit en réduit : il s\'arrête, puis ne repart pas forcément au retour du confort (hystérésis d\'ambiance, limite de chauffe), et chaque relance coûte un démarrage du brûleur.',
+                'details' => [
+                    $first.' : '.implode(', ', array_unique($issues[$first])).(count($issues) > 1 ? ' (et '.(count($issues) - 1).' autre(s) jour(s)).' : '.'),
+                    'Préférer une plage de confort continue ; la durée d\'anticipation fait démarrer la chaudière assez tôt pour être à la consigne au début de la plage.',
+                    'Le programme se modifie sur la page « Programmes horaires ».',
+                ],
+                'changes' => [],
+            ];
+        }
+
+        // Confort élevé
+        if ($comfort !== null && $comfort > 21) {
+            $recs[] = [
+                'id' => 'comfort_high',
+                'category' => 'consumption',
+                'severity' => 'info',
+                'level' => 'basic',
+                'title' => 'Consigne confort élevée ('.$fmt($comfort).' °C)',
+                'summary' => 'Chaque degré de plus coûte environ 7 % de granulés. Au-delà de 21 °C, ÖkoFEN conseille plutôt de revoir la loi d\'eau.',
+                'details' => [],
+                'changes' => [self::P['room_comfort'] => 21],
+            ];
+        }
+
+        // Écart confort / réduit
+        if ($comfort !== null && $reduced !== null && $comfort - $reduced > 5) {
+            $recs[] = [
+                'id' => 'setback_large',
+                'category' => 'comfort',
+                'severity' => 'info',
+                'level' => 'basic',
+                'title' => 'Écart confort / réduit de '.$fmt($comfort - $reduced).' °C',
+                'summary' => 'ÖkoFEN conseille au plus 5 °C d\'écart sur radiateurs (2 °C sur plancher chauffant) : au-delà, la relance du matin est longue et puissante.',
+                'details' => [],
+                'changes' => [self::P['room_reduced'] => $comfort - 5],
+            ];
+        }
+
+        // Limite de réduit haute
+        if ($limitReduced !== null && $limitReduced >= 14) {
+            $recs[] = [
+                'id' => 'reduced_limit_high',
+                'category' => 'consumption',
+                'severity' => 'info',
+                'level' => 'basic',
+                'title' => 'Limite de chauffe en réduit haute ('.$fmt($limitReduced).' °C → 10 °C)',
+                'summary' => 'Avec '.$fmt($limitReduced).' °C, le circuit peut chauffer presque toutes les nuits de la saison. Il est souvent inutile de chauffer la nuit : la maison est chaude en début de nuit et la chaudière redémarre de toute façon avant la plage de confort.',
+                'details' => [
+                    'Repères ÖkoFEN : 0 °C (maison très isolée), 5 °C (bien isolée), 10 °C (moyennement isolée), 14 °C (peu isolée).',
+                    'Avec une sonde d\'ambiance, la consigne de réduit protège déjà la nuit : la limite ne fait que l\'autoriser à chauffer.',
+                    'Si la pièce est trop froide au réveil, allonger plutôt la durée d\'anticipation.',
+                ],
+                'changes' => [self::P['limit_reduced'] => 10],
+            ];
+        }
+
+        return $recs;
     }
 
     /**

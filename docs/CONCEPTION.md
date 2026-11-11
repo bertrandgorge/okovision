@@ -122,7 +122,7 @@ resources/okofen/catalog.yaml   description de tous les champs (35 mesures CSV, 
 
 **Archivage** : au-delà de N mois (24 par défaut), les mesures minute sont exportées chaque mois en CSV gzip
 (≈ 0,5 Mo/mois contre ≈ 3 Mo en base), contrôlées par relecture complète puis supprimées. Synthèses et cycles restent en
-base : historique, signature et comparaisons de saisons ne sont pas affectés, et la vue *Journée* relit l'archive
+base : historique, signature et comparaisons de saisons ne sont pas affectés, et la journée détaillée du tableau de bord relit l'archive
 à la volée. Un mois archivé peut être restauré ou téléchargé.
 
 ### Stock de granulés et cendrier
@@ -138,10 +138,11 @@ base : historique, signature et comparaisons de saisons ne sont pas affectés, e
 
 | Page | Contenu |
 |---|---|
-| Tableau de bord | état live, indicateurs (T ext/ambiance/chaudière/ECS, kg et cycles du jour, silo, cendrier), journée en cours, recommandations, alertes |
-| Journée | courbes minute par minute synchronisées (températures, frise des états brûleur/pompes, combustion), tableau des cycles |
+| Tableau de bord | état live, indicateurs (T ext/ambiance/chaudière/ECS, kg et cycles du jour, silo, cendrier), alertes, puis la journée choisie (sélecteur de date en haut à gauche) : bilan du jour, courbes minute par minute synchronisées (températures, frise des états brûleur/pompes, combustion), tableau des cycles ; recommandations |
 | Historique | consommation chauffage/ECS, cycles et allumages à froid, signature énergétique par saison, distribution des durées de cycle, comparaison des saisons (kg, €, DJU, kg/DJU) |
-| Loi d'eau | éditeur visuel (poignées déplaçables et curseurs), nuage des consignes réellement calculées coloré par l'écart d'ambiance, courbe apprise, application à la chaudière |
+| Chauffage (loi d'eau) | éditeur visuel (poignées déplaçables et curseurs), nuage des consignes réellement calculées coloré par l'écart d'ambiance, courbe apprise, application à la chaudière |
+| Eau chaude | indicateurs (ballon, dernière désinfection ≥ 10 min à 60 °C, prochain cycle anti-légionelles, charges/jour), points d'attention légionelles, journée minute par minute : T ballon, plages ECS, consigne, T mini hors plages et seuil de relance (− hystérésis) avec les réglages en vigueur à chaque instant (reconstitués depuis le journal des modifications), réglages ECS modifiables, charge immédiate, éditeurs des programmes horaires de l'eau chaude et du bouclage |
+| Programmes horaires | chauffage uniquement : programme soirée (confort jusqu'à une heure donnée) et vacances (dates, T ambiante), programmes 1 et 2 avec aperçu de la semaine, ajout / suppression de plages, alerte sur les coupures et plages de moins de 2 h |
 | Réglages chaudière | tous les réglages du catalogue (essentiels / avancés), recherche, diff avant écriture, profils, journal |
 | Optimisation | diagnostic chiffré, besoin vs puissance mini, recommandations applicables en un clic, configuration du pilotage par blocs |
 | Silo & cendrier | jauges, stock reconstitué et projection, calibration, saisie rapide (livraison, niveau, cendrier) |
