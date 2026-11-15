@@ -28,7 +28,7 @@
     "src": "_instrument-sans-600-normal-B9e8oLYv.woff"
   },
   "resources/css/app.css": {
-    "file": "assets/app-De8GvvpH.css",
+    "file": "assets/app-BGVrMCkX.css",
     "name": "app",
     "names": [
       "app.css"
@@ -52,7 +52,7 @@
     "isEntry": true
   },
   "resources/js/filament/echart.js": {
-    "file": "assets/echart-DE-6kzsl.js",
+    "file": "assets/echart-C7rElpJP.js",
     "name": "echart",
     "src": "resources/js/filament/echart.js",
     "isEntry": true

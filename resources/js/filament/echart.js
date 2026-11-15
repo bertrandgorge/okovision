@@ -135,17 +135,86 @@ function applyAxisTheme(option, dark) {
     return option
 }
 
-function buildOption(configuration) {
+/** Largeur (px) sous laquelle un graphique passe en mode compact (téléphone, colonne étroite). */
+const COMPACT_WIDTH = 640
+
+/** Libellés courts des lignes de la frise des états, en mode compact */
+const SHORT_LANES = { 'Brûleur': 'Brûleur', 'Allumeur': 'Allum.', 'Pompe chauffage': 'P. chauf.', 'Pompe ECS': 'P. ECS' }
+
+const asList = (v) => (v === undefined ? [] : Array.isArray(v) ? v : [v])
+
+/**
+ * Mode compact : les options PHP prévoient de larges marges (noms en bout de courbe, axe de droite décalé, libellés
+ * de la frise) et plusieurs rangées de légende à position fixe ; sur un écran étroit il ne resterait presque rien pour
+ * les courbes. On garde une légende défilante sur une ligne, sans noms en bout de courbe, avec des marges serrées.
+ */
+function compactOption(option) {
+    const legends = asList(option.legend)
+    const legendRows = legends.length
+    if (legendRows) {
+        const data = legends.some((l) => l.data) ? legends.flatMap((l) => l.data || []) : undefined
+        const selected = Object.assign({}, ...legends.map((l) => l.selected || {}))
+        option.legend = { ...legends[0], type: 'scroll', top: 0, left: 4, right: 4, itemWidth: 20, itemGap: 10, data, selected, pageIconSize: 10 }
+        if (!data) delete option.legend.data
+    }
+
+    for (const s of option.series || []) {
+        delete s.endLabel
+        delete s.labelLayout
+    }
+
+    const yAxes = asList(option.yAxis)
+    const hasLanes = yAxes.some((a) => a.type === 'category' && (a.gridIndex ?? 0) > 0)
+    const hasRightAxis = yAxes.some((a, i) => i > 0 && a.type !== 'category' && (a.gridIndex ?? 0) === 0)
+    yAxes.forEach((a) => {
+        if (a.offset) a.offset = 0
+        // nom en bout d'axe (« Ext. / ambiance °C ») réduit à son unité ; les titres le long de l'axe restent
+        if (typeof a.name === 'string' && a.name.length > 8 && a.nameLocation !== 'middle') a.name = a.name.split(' ').pop()
+        if (a.type === 'category' && hasLanes && Array.isArray(a.data)) {
+            a.data = a.data.map((l) => SHORT_LANES[l] ?? l)
+            a.axisLabel = { ...(a.axisLabel || {}), fontSize: 10, margin: 4 }
+        }
+    })
+
+    // mêmes marges gauche / droite pour toutes les grilles (alignement de la frise sur les courbes) ; les graphiques
+    // de journée (marge large côté PHP, avec ou sans frise) gardent la même marge pour rester alignés entre eux
+    const right = hasRightAxis ? 40 : 14
+    const hasSideTitle = yAxes.some((a) => a.nameLocation === 'middle')
+    const grids = asList(option.grid)
+    grids.forEach((g) => {
+        if (typeof g.left === 'number' && !hasSideTitle) g.left = g.left >= 100 || hasLanes ? 56 : Math.min(g.left, 44)
+        if (g.right === undefined || (typeof g.right === 'number' && g.right > right)) g.right = right
+        // une seule rangée de légende : place pour elle et le nom de l'axe
+        if (typeof g.top === 'number' && legendRows) g.top = Math.max(48, g.top - (legendRows - 1) * 22)
+    })
+
+    for (const a of asList(option.xAxis)) if (a.type === 'time') a.splitNumber = 4
+
+    // échelle de couleurs : sous la légende, centrée, plutôt que posée sur les courbes
+    for (const v of asList(option.visualMap)) {
+        if (v.show === false) continue
+        Object.assign(v, { orient: 'horizontal', left: 'center', right: undefined, top: 26, itemWidth: 10, itemHeight: 120 })
+        delete v.right
+    }
+
+    // au doigt : glisser fait défiler la page (le zoom reste possible au pincement et par la réglette)
+    for (const z of asList(option.dataZoom)) if (z.type === 'inside') z.moveOnMouseMove = false
+
+    return option
+}
+
+function buildOption(configuration, compact = false) {
     const dark = isDark()
     const base = baseOption(dark)
     delete base._axis
-    const option = hydrate(structuredClone(configuration.option || {}))
+    let option = hydrate(structuredClone(configuration.option || {}))
     for (const k of Object.keys(option)) if (option[k] === null) delete option[k]
     // Lisibilité : courbes sans symbole (la légende reprend alors le trait plein / pointillé), légende aérée
     for (const s of option.series || []) {
         if (s.type === 'line' && s.showSymbol === false && s.symbol === undefined) s.symbol = 'none'
     }
-    const legendBase = { ...base.legend, itemWidth: 28, itemHeight: 10, itemGap: 14 }
+    if (compact) option = compactOption(option)
+    const legendBase = { ...base.legend, itemWidth: compact ? 20 : 28, itemHeight: 10, itemGap: compact ? 10 : 14 }
     const legend = Array.isArray(option.legend)
         ? option.legend.map((l) => ({ ...legendBase, ...l }))
         : { ...legendBase, ...(option.legend || {}) }
@@ -195,6 +264,8 @@ export default function mountEchart({ host, props }) {
     host.style.height = configuration.height || '360px'
 
     let chart = null
+    const isCompact = () => host.clientWidth > 0 && host.clientWidth < COMPACT_WIDTH
+    let compact = isCompact()
     const init = () => {
         chart?.dispose()
         chart = echarts.init(host, isDark() ? 'dark' : null, { renderer: 'canvas', locale: 'FR' })
@@ -202,12 +273,20 @@ export default function mountEchart({ host, props }) {
             chart.group = configuration.group
             echarts.connect(configuration.group)
         }
-        chart.setOption(buildOption(configuration), true)
+        chart.setOption(buildOption(configuration, compact), true)
         setupHover(chart, configuration)
     }
     init()
 
-    const resize = new ResizeObserver(() => chart?.resize())
+    // passage du seuil compact (rotation du téléphone, fenêtre redimensionnée) : options recalculées
+    const resize = new ResizeObserver(() => {
+        const next = isCompact()
+        if (next !== compact) {
+            compact = next
+            chart?.setOption(buildOption(configuration, compact), true)
+        }
+        chart?.resize()
+    })
     resize.observe(host)
 
     // Bascule clair / sombre de Filament
@@ -218,7 +297,7 @@ export default function mountEchart({ host, props }) {
         update({ configuration: next }) {
             configuration = next || {}
             host.style.height = configuration.height || '360px'
-            chart.setOption(buildOption(configuration), true)
+            chart.setOption(buildOption(configuration, compact), true)
             setupHover(chart, configuration)
         },
         destroy() {
