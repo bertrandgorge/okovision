@@ -23,8 +23,8 @@
         <x-kpi label="Cycles" :value="$fmt($totals->cycles)" :hint="$totals->n ? $fmt($totals->cycles / $totals->n, 1).' / jour, '.$fmt($totals->cold).' à froid' : null" />
     </div>
 
-    <x-filament::section heading="Consommation journalière" description="Répartition chauffage / eau chaude (pompe ECS en marche) et température extérieure moyenne.">
-        <x-echart id="hist-daily-{{ $from }}-{{ $to }}" :option="$daily" height="340px" group="hist" />
+    <x-filament::section heading="Consommation journalière" description="Répartition chauffage / eau chaude (pompe ECS en marche) et température extérieure moyenne. En dessous : kg de chauffage par DJU, jour par jour (jours d’au moins 1 DJU où la chaudière a fonctionné), avec la moyenne de la période en pointillés.">
+        <x-echart id="hist-daily-{{ $from }}-{{ $to }}" :option="$daily" height="460px" group="hist" />
     </x-filament::section>
 
     <x-filament::section heading="Cycles brûleur" description="Un cycle efficace dure longtemps : chaque démarrage coûte une phase d'allumage et une post-ventilation qui refroidit la chaudière.">

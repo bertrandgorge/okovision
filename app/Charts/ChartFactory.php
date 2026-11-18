@@ -368,7 +368,13 @@ class ChartFactory
             return $option;
         }
 
-        $option['grid']['top'] = max(48, (int) ($option['grid']['top'] ?? 36) + 12);
+        // grille principale (la première quand le graphique a des sous-graphes)
+        $grid = &$option['grid'];
+        if (isset($grid[0])) {
+            $grid = &$grid[0];
+        }
+        $grid['top'] = max(48, (int) ($grid['top'] ?? 36) + 12);
+        unset($grid);
         $option['series'][0]['markLine'] = [
             'symbol' => ['none', 'none'],
             'silent' => false,
@@ -382,29 +388,56 @@ class ChartFactory
         return $option;
     }
 
-    /** Consommation journalière (chauffage / ECS) et température extérieure. */
+    /**
+     * Consommation journalière (chauffage / ECS) et température extérieure, avec en sous-graphe les kg de chauffage
+     * par DJU et la moyenne de la période en repère. Le ratio n'est calculé que les jours d'au moins 1 DJU (en deçà il
+     * n'a pas de sens), où la chaudière a consommé (hors saison de chauffe) et mesurés à 90 % au moins.
+     */
     public function dailyConsumption(string $from, string $to): array
     {
         $rows = DB::table('daily_stats')->whereBetween('day', [$from, $to])->orderBy('day')->get();
         $day = fn ($r) => (string) $r->day;
+        $heating = fn ($r) => (float) $r->pellets_kg - (float) $r->pellets_kg_dhw;
+        $ratioable = fn ($r) => (float) $r->dju >= 1 && (float) $r->pellets_kg > 0 && $r->samples >= 1296;
+        $valid = $rows->filter($ratioable);
+        $dju = $valid->sum(fn ($r) => (float) $r->dju);
+        $mean = $dju > 0 ? round($valid->sum($heating) / $dju, 2) : null;
+        $xAxis = ['type' => 'time', 'min' => $from, 'max' => $to.' 23:59:59', 'axisLabel' => ['formatter' => '@day', 'hideOverlap' => true]];
 
         return [
             'legend' => ['top' => 0],
-            'grid' => ['left' => 48, 'right' => 48, 'top' => 36, 'bottom' => 56],
-            'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@num'],
-            'xAxis' => ['type' => 'time', 'min' => $from, 'max' => $to.' 23:59:59', 'axisLabel' => ['formatter' => '@day', 'hideOverlap' => true]],
-            'yAxis' => [
-                ['type' => 'value', 'name' => 'kg/jour', 'min' => 0],
-                ['type' => 'value', 'name' => '°C', 'splitLine' => ['show' => false]],
+            'grid' => [
+                ['left' => 48, 'right' => 48, 'top' => 36, 'bottom' => 186],
+                ['left' => 48, 'right' => 48, 'height' => 96, 'bottom' => 48],
             ],
-            'dataZoom' => [['type' => 'inside'], ['type' => 'slider', 'height' => 18, 'bottom' => 4]],
+            'tooltip' => ['trigger' => 'axis', 'valueFormatter' => '@num'],
+            'axisPointer' => ['link' => [['xAxisIndex' => 'all']]],
+            'xAxis' => [
+                ['gridIndex' => 0, 'axisLabel' => ['show' => false]] + $xAxis,
+                ['gridIndex' => 1] + $xAxis,
+            ],
+            'yAxis' => [
+                ['gridIndex' => 0, 'type' => 'value', 'name' => 'kg/jour', 'min' => 0],
+                ['gridIndex' => 0, 'type' => 'value', 'name' => '°C', 'splitLine' => ['show' => false]],
+                ['gridIndex' => 1, 'type' => 'value', 'name' => 'kg/DJU', 'min' => 0, 'splitNumber' => 2],
+            ],
+            'dataZoom' => [['type' => 'inside', 'xAxisIndex' => [0, 1]], ['type' => 'slider', 'xAxisIndex' => [0, 1], 'height' => 18, 'bottom' => 4]],
             'series' => [
                 ['name' => 'Chauffage', 'type' => 'bar', 'stack' => 'kg', 'itemStyle' => ['color' => self::COLORS['heating']],
-                    'data' => $rows->map(fn ($r) => [$day($r), round($r->pellets_kg - $r->pellets_kg_dhw, 1)])->all()],
+                    'data' => $rows->map(fn ($r) => [$day($r), round($heating($r), 1)])->all()],
                 ['name' => 'Eau chaude', 'type' => 'bar', 'stack' => 'kg', 'itemStyle' => ['color' => self::COLORS['dhw_kg']],
                     'data' => $rows->map(fn ($r) => [$day($r), round((float) $r->pellets_kg_dhw, 1)])->all()],
                 ['name' => 'T ext moyenne', 'type' => 'line', 'yAxisIndex' => 1, 'showSymbol' => false, 'itemStyle' => ['color' => self::COLORS['outside']],
                     'data' => $rows->map(fn ($r) => [$day($r), $r->outside_avg === null ? null : (float) $r->outside_avg])->all()],
+                ['name' => 'kg chauffage / DJU', 'type' => 'bar', 'xAxisIndex' => 1, 'yAxisIndex' => 2, 'itemStyle' => ['color' => '#b45309'],
+                    'tooltip' => ['valueFormatter' => '@kg2'],
+                    'data' => $rows->map(fn ($r) => [$day($r), $ratioable($r) ? round($heating($r) / (float) $r->dju, 2) : null])->all(),
+                ] + ($mean === null ? [] : ['markLine' => [
+                    'symbol' => 'none', 'silent' => true,
+                    'lineStyle' => ['color' => '#78716c', 'type' => 'dashed'],
+                    'label' => ['position' => 'insideEndTop', 'formatter' => 'moy. '.number_format($mean, 2, ',', ' ')],
+                    'data' => [['yAxis' => $mean]],
+                ]]),
             ],
         ];
     }
